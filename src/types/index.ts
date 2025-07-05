@@ -373,3 +373,308 @@ export interface WordTiming {
   cumulativeWPM: number;
   instantWPM: number;
 }
+
+// Team Management Types
+export type TeamRole = 'owner' | 'admin' | 'editor' | 'viewer';
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  settings: TeamSettings;
+  stats: TeamStats;
+  subscriptionTier: SubscriptionTier;
+}
+
+export interface TeamMember {
+  id: string;
+  teamId: string;
+  userId: string;
+  email: string;
+  displayName?: string;
+  role: TeamRole;
+  joinedAt: Date;
+  lastActiveAt: Date;
+  invitedBy: string;
+}
+
+export interface TeamInvitation {
+  id: string;
+  teamId: string;
+  teamName: string;
+  email: string;
+  role: TeamRole;
+  invitedBy: string;
+  invitedByName: string;
+  createdAt: Date;
+  expiresAt: Date;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  message?: string;
+}
+
+export interface TeamSettings {
+  allowMemberInvites: boolean;
+  defaultMemberRole: TeamRole;
+  requireApprovalForJoining: boolean;
+  allowPublicScripts: boolean;
+  maxMembers: number;
+  enableActivityLog: boolean;
+  enableRealTimeCollaboration: boolean;
+}
+
+export interface TeamStats {
+  memberCount: number;
+  scriptCount: number;
+  folderCount: number;
+  totalStorageUsed: number; // in bytes
+  lastActivityAt: Date;
+  activeMembers: number; // members active in last 30 days
+}
+
+export interface TeamActivity {
+  id: string;
+  teamId: string;
+  userId: string;
+  userDisplayName: string;
+  action: TeamActivityAction;
+  targetType: 'script' | 'folder' | 'member' | 'team' | 'invitation';
+  targetId: string;
+  targetName: string;
+  metadata?: Record<string, unknown>;
+  timestamp: Date;
+}
+
+export type TeamActivityAction = 
+  | 'created'
+  | 'updated' 
+  | 'deleted'
+  | 'shared'
+  | 'moved'
+  | 'invited'
+  | 'joined'
+  | 'left'
+  | 'role_changed'
+  | 'permissions_changed';
+
+export interface ScriptFolder {
+  id: string;
+  name: string;
+  description?: string;
+  parentId?: string;
+  teamId?: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  scriptIds: string[];
+  permissions?: FolderPermissions;
+  color?: string;
+  icon?: string;
+}
+
+export interface FolderPermissions {
+  canRead: TeamRole[];
+  canWrite: TeamRole[];
+  canDelete: TeamRole[];
+  canShare: TeamRole[];
+}
+
+// Subscription Management Types
+export type SubscriptionTier = 'free' | 'personal' | 'business' | 'enterprise';
+
+export type SubscriptionStatus = 
+  | 'active'
+  | 'canceled' 
+  | 'past_due'
+  | 'unpaid'
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'trialing'
+  | 'paused';
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  tier: SubscriptionTier;
+  status: SubscriptionStatus;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  trialStart?: Date;
+  trialEnd?: Date;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  revenueCatUserId?: string;
+  features: SubscriptionFeatures;
+  usage: SubscriptionUsage;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SubscriptionFeatures {
+  maxScripts: number;
+  maxTeams: number;
+  maxTeamMembers: number;
+  maxStorageGB: number;
+  cloudSync: boolean;
+  teamCollaboration: boolean;
+  advancedAnalytics: boolean;
+  prioritySupport: boolean;
+  customBranding: boolean;
+  apiAccess: boolean;
+  exportOptions: string[];
+  integrations: string[];
+}
+
+export interface SubscriptionUsage {
+  scriptsUsed: number;
+  teamsUsed: number;
+  storageUsedGB: number;
+  teamMembersUsed: number;
+  lastUpdated: Date;
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: 'card' | 'paypal' | 'bank_account';
+  last4?: string;
+  brand?: string;
+  expiryMonth?: number;
+  expiryYear?: number;
+  isDefault: boolean;
+  stripePaymentMethodId?: string;
+}
+
+export interface BillingInfo {
+  customerId: string;
+  email: string;
+  name?: string;
+  address?: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
+  taxId?: string;
+  paymentMethods: PaymentMethod[];
+  defaultPaymentMethodId?: string;
+}
+
+export interface Invoice {
+  id: string;
+  subscriptionId: string;
+  amount: number;
+  currency: string;
+  status: 'draft' | 'open' | 'paid' | 'uncollectible' | 'void';
+  createdAt: Date;
+  dueDate: Date;
+  paidAt?: Date;
+  hostedInvoiceUrl?: string;
+  invoicePdf?: string;
+  stripeInvoiceId?: string;
+}
+
+// Feature Gate Types
+export interface FeatureGate {
+  feature: string;
+  enabled: boolean;
+  tier: SubscriptionTier;
+  reason?: string;
+  upgradeUrl?: string;
+}
+
+export type FeatureName = 
+  | 'unlimited_scripts'
+  | 'team_collaboration'
+  | 'advanced_analytics'
+  | 'priority_support'
+  | 'custom_branding'
+  | 'api_access'
+  | 'bulk_export'
+  | 'integrations'
+  | 'real_time_collaboration'
+  | 'version_history';
+
+// Enhanced Script type with team support
+export interface ScriptWithTeam extends Script {
+  teamId?: string;
+  folderId?: string;
+  permissions?: ScriptPermissions;
+  sharedWith?: string[];
+  isPublic?: boolean;
+  teamName?: string;
+  folderName?: string;
+}
+
+export interface ScriptPermissions {
+  canRead: TeamRole[];
+  canWrite: TeamRole[];
+  canDelete: TeamRole[];
+  canShare: TeamRole[];
+}
+
+// Store Extensions for Team Support
+export interface TeamStore {
+  // Team state
+  currentTeam: Team | null;
+  teams: Team[];
+  teamMembers: TeamMember[];
+  teamInvitations: TeamInvitation[];
+  teamActivity: TeamActivity[];
+  scriptFolders: ScriptFolder[];
+  
+  // Team operations
+  createTeam: (team: Omit<Team, 'id' | 'createdAt' | 'updatedAt' | 'stats'>) => Promise<void>;
+  updateTeam: (teamId: string, updates: Partial<Team>) => Promise<void>;
+  deleteTeam: (teamId: string) => Promise<void>;
+  setCurrentTeam: (team: Team | null) => void;
+  
+  // Member management
+  inviteMember: (teamId: string, email: string, role: TeamRole, message?: string) => Promise<void>;
+  acceptInvitation: (invitationId: string) => Promise<void>;
+  declineInvitation: (invitationId: string) => Promise<void>;
+  updateMemberRole: (teamId: string, userId: string, role: TeamRole) => Promise<void>;
+  removeMember: (teamId: string, userId: string) => Promise<void>;
+  
+  // Folder management
+  createFolder: (folder: Omit<ScriptFolder, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateFolder: (folderId: string, updates: Partial<ScriptFolder>) => Promise<void>;
+  deleteFolder: (folderId: string) => Promise<void>;
+  moveScriptToFolder: (scriptId: string, folderId: string | null) => Promise<void>;
+  
+  // Activity and sync
+  logActivity: (activity: Omit<TeamActivity, 'id' | 'timestamp'>) => Promise<void>;
+  subscribeToTeamUpdates: (teamId: string) => () => void;
+}
+
+export interface SubscriptionStore {
+  // Subscription state
+  subscription: Subscription | null;
+  billingInfo: BillingInfo | null;
+  invoices: Invoice[];
+  isLoading: boolean;
+  
+  // Subscription operations
+  getSubscription: () => Promise<void>;
+  updateSubscription: (tier: SubscriptionTier) => Promise<void>;
+  cancelSubscription: () => Promise<void>;
+  reactivateSubscription: () => Promise<void>;
+  
+  // Payment operations
+  addPaymentMethod: (paymentMethodId: string) => Promise<void>;
+  removePaymentMethod: (paymentMethodId: string) => Promise<void>;
+  setDefaultPaymentMethod: (paymentMethodId: string) => Promise<void>;
+  
+  // Feature gating
+  checkFeature: (feature: FeatureName) => FeatureGate;
+  canUseFeature: (feature: FeatureName) => boolean;
+  getUpgradeUrl: (feature: FeatureName) => string | null;
+  
+  // Usage tracking
+  updateUsage: () => Promise<void>;
+  checkUsageLimits: () => Promise<void>;
+}

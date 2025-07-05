@@ -9,3 +9,6 @@ export { default as PacingMeter } from './PacingMeter';
 export { default as SessionSummary } from './SessionSummary';
 export { default as FillerWordCue } from './FillerWordCue';
 export { default as PacingSettings } from './PacingSettings';
+
+// Team components
+export * from './team';

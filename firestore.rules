@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Teams collection
+    match /teams/{teamId} {
+      // Team owners and admins can read/write team data
+      allow read, write: if request.auth != null && 
+        (getUserRole(teamId, request.auth.uid) in ['owner', 'admin']);
+      
+      // All team members can read team data
+      allow read: if request.auth != null && 
+        isTeamMember(teamId, request.auth.uid);
+    }
+    
+    // Team members subcollection
+    match /teams/{teamId}/members/{memberId} {
+      // Team owners and admins can manage members
+      allow read, write: if request.auth != null && 
+        (getUserRole(teamId, request.auth.uid) in ['owner', 'admin']);
+      
+      // Members can read their own membership data
+      allow read: if request.auth != null && request.auth.uid == memberId;
+    }
+    
+    // Team invitations
+    match /teamInvitations/{invitationId} {
+      // Team owners and admins can create invitations
+      allow create: if request.auth != null && 
+        (getUserRole(resource.data.teamId, request.auth.uid) in ['owner', 'admin']);
+      
+      // Invited users can read and update their invitations
+      allow read, update: if request.auth != null && 
+        request.auth.email == resource.data.email;
+      
+      // Team owners and admins can read invitations for their teams
+      allow read: if request.auth != null && 
+        (getUserRole(resource.data.teamId, request.auth.uid) in ['owner', 'admin']);
+    }
+    
+    // Scripts collection with team support
+    match /scripts/{scriptId} {
+      // Personal scripts - user owns the script
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId && 
+        resource.data.teamId == null;
+      
+      // Team scripts - check team permissions
+      allow read: if request.auth != null && 
+        resource.data.teamId != null && 
+        isTeamMember(resource.data.teamId, request.auth.uid);
+      
+      allow write: if request.auth != null && 
+        resource.data.teamId != null && 
+        (getUserRole(resource.data.teamId, request.auth.uid) in ['owner', 'admin', 'editor']);
+      
+      // Creating new team scripts
+      allow create: if request.auth != null && 
+        request.resource.data.teamId != null && 
+        (getUserRole(request.resource.data.teamId, request.auth.uid) in ['owner', 'admin', 'editor']);
+    }
+    
+    // Script folders for team organization
+    match /scriptFolders/{folderId} {
+      allow read: if request.auth != null && 
+        (resource.data.teamId == null && request.auth.uid == resource.data.userId) ||
+        (resource.data.teamId != null && isTeamMember(resource.data.teamId, request.auth.uid));
+      
+      allow write: if request.auth != null && 
+        (resource.data.teamId == null && request.auth.uid == resource.data.userId) ||
+        (resource.data.teamId != null && getUserRole(resource.data.teamId, request.auth.uid) in ['owner', 'admin', 'editor']);
+    }
+    
+    // Team activity logs
+    match /teamActivity/{activityId} {
+      allow read: if request.auth != null && 
+        isTeamMember(resource.data.teamId, request.auth.uid);
+      
+      allow create: if request.auth != null && 
+        isTeamMember(request.resource.data.teamId, request.auth.uid);
+      
+      // Activity logs are immutable after creation
+      allow update, delete: if false;
+    }
+    
+    // Subscriptions collection
+    match /subscriptions/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Helper functions
+    function getUserRole(teamId, userId) {
+      return get(/databases/$(database)/documents/teams/$(teamId)/members/$(userId)).data.role;
+    }
+    
+    function isTeamMember(teamId, userId) {
+      return exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId));
+    }
+  }
+}

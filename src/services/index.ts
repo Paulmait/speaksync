@@ -6,6 +6,8 @@ export { karaokeService } from './karaokeService';
 export * from './firebase';
 export { PacingMeterService, pacingMeterService } from './pacingMeterService';
 export { FillerWordDetectionService, fillerWordDetectionService } from './fillerWordDetectionService';
+export { teamService } from './teamService';
+export { subscriptionService } from './subscriptionService';
 
 // Re-export from adaptiveScrollService
 export * from './adaptiveScrollService';

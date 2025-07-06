@@ -23,7 +23,7 @@ export const SubscriptionNotification: React.FC<SubscriptionNotificationProps> =
         visible={visible}
         onDismiss={onDismiss}
         duration={5000}
-        action={action}
+        {...(action && { action })}
       >
         {message}
       </Snackbar>

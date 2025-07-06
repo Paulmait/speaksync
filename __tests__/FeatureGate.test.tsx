@@ -3,7 +3,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { FeatureGate } from '../src/components/subscription/FeatureGate';
 import { SubscriptionContext } from '../src/contexts/SubscriptionContext';
-import { SubscriptionTier } from '../src/types/subscriptionTypes';
+import { SubscriptionTier, SubscriptionStatus } from '../src/types/subscriptionTypes';
 
 // Mock the subscription context
 const mockSubscriptionContext = {
@@ -11,11 +11,30 @@ const mockSubscriptionContext = {
   subscriptionContext: {
     subscription: {
       subscriptionTier: SubscriptionTier.FREE,
-      subscriptionStatus: 'active' as const,
+      subscriptionStatus: SubscriptionStatus.ACTIVE,
       subscriptionStartDate: Date.now(),
     },
+    features: {
+      unlimitedTime: false,
+      unlimitedScripts: false,
+      aiFeedback: false,
+      cloudSync: true,
+      analytics: false,
+      exportVideo: false,
+      overlayExport: false,
+      teamCollaboration: false,
+      multiDeviceSync: true,
+      prioritySupport: false,
+      removeWatermark: false,
+      customThemes: false,
+      advancedPrompting: false,
+      scriptTemplates: true,
+      audioPractice: false
+    },
     isFeatureAvailable: jest.fn(),
+    isFreeTrial: false,
     hasReachedFreeLimit: jest.fn(),
+    upgradeNeeded: jest.fn(),
     freeTierUsage: {
       freeSessionCount: 0,
       freeSessionDurationAccumulated: 0,
@@ -26,6 +45,13 @@ const mockSubscriptionContext = {
   checkFeatureAccess: jest.fn(),
   checkFreeLimit: jest.fn(),
   getCtaMessage: jest.fn(),
+  getCurrentTier: jest.fn(() => SubscriptionTier.FREE),
+  getFreeTierUsage: jest.fn(() => ({
+    freeSessionCount: 0,
+    freeSessionDurationAccumulated: 0,
+    savedScriptsCount: 0,
+    lastUpdated: Date.now(),
+  })),
   purchaseSubscription: jest.fn(),
   restorePurchases: jest.fn(),
 };

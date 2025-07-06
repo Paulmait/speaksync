@@ -2,7 +2,6 @@ import { Audio } from 'expo-av';
 import Constants from 'expo-constants';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk';
-import { PerformanceOptimizer } from './performanceOptimizer';
 import { ErrorHandlingService } from './errorHandlingService';
 import { logger } from './loggingService';
 import { 
@@ -40,7 +39,6 @@ class SpeechRecognitionService {
   private wordListeners: Array<(word: string, confidence: number, timestamp: number) => void> = [];
   private karaokeListeners: Array<(match: WordMatch | null) => void> = [];
   /* eslint-enable @typescript-eslint/no-unused-vars */
-  private performanceOptimizer = PerformanceOptimizer.getInstance();
   private errorHandler = ErrorHandlingService.getInstance();
   private currentState: SpeechRecognitionState = {
     isListening: false,
@@ -70,13 +68,13 @@ class SpeechRecognitionService {
     detectLanguage: false,
     enableUtteranceEndMarker: true,
     enableWordTimestamps: true,
-    deepgramApiKey: Constants.expoConfig?.extra?.deepgramApiKey || '',
+    deepgramApiKey: Constants.expoConfig?.extra?.['deepgramApiKey'] || '',
   };
 
   constructor() {
     this.initializeAudio();
     // Automatically set Deepgram API key from Expo Constants
-    const deepgramApiKey = Constants.expoConfig?.extra?.deepgramApiKey;
+    const deepgramApiKey = Constants.expoConfig?.extra?.['deepgramApiKey'];
     if (deepgramApiKey) {
       this.setApiKey(deepgramApiKey);
     }

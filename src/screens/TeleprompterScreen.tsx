@@ -8,7 +8,6 @@ import {
   Text as RNText,
   Animated,
   Platform,
-  Alert,
 } from 'react-native';
 import {
   Text,
@@ -25,9 +24,7 @@ import {
 import Slider from '@react-native-community/slider';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useScriptStore } from '../store/scriptStore';
-import { useSubscriptionContext } from '../contexts/SubscriptionContext';
 import { SessionTimer } from '../components/subscription/SessionTimer';
-import { FeatureGate } from '../components/subscription/FeatureGate';
 import { 
   SpeechRecognitionPanel, 
   KaraokeText, 
@@ -62,13 +59,7 @@ const performanceOptimizer = PerformanceOptimizer.getInstance();
 
 // Import the adaptive scroll service - create temporary instance for now
 const adaptiveScrollService = {
-  initialize: (
-    scriptAnalysis: any,
-    settings: any,
-    onScrollUpdate?: (position: number, velocity: number, metrics: any) => void,
-    onPaceChange?: (metrics: any) => void,
-    onScrollStateChange?: (state: any) => void
-  ) => {},
+  initialize: () => {},
   getScrollState: () => ({
     currentPosition: 0,
     velocity: 0,
@@ -81,11 +72,11 @@ const adaptiveScrollService = {
     smoothingBuffer: []
   }),
   stop: () => {},
-  processWordTiming: (wordIndex: number, word: string, timestamp: number, confidence: number) => {},
+  processWordTiming: () => {},
   start: () => {},
   reset: () => {},
-  setUserScrollPosition: (position: number) => {},
-  updateSettings: (settings: any) => {},
+  setUserScrollPosition: () => {},
+  updateSettings: () => {},
 };
 import { 
   RootStackParamList, 
@@ -94,7 +85,6 @@ import {
   KaraokeState, 
   KaraokeHighlightSettings,
   ScriptAnalysis,
-  WordMatch,
   AdaptiveScrollSettings,
   SpeechPaceMetrics,
   ScrollState,
@@ -123,7 +113,7 @@ type TeleprompterScreenRouteProp = RouteProp<
   'Teleprompter'
 >;
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const FONT_FAMILIES = [
   { label: 'System Default', value: Platform.OS === 'ios' ? 'System' : 'sans-serif' },
@@ -162,7 +152,7 @@ export default function TeleprompterScreen() {
   const { getScriptById } = useScriptStore();
   
   // Subscription context for feature gating and usage tracking
-  const { checkFeatureAccess, getCurrentTier, getFreeTierUsage } = useSubscriptionContext();
+  // const { checkFeatureAccess, getCurrentTier, getFreeTierUsage } = useSubscriptionContext();
   
   const [script, setScript] = useState(getScriptById(scriptId));
   const [settings, setSettings] = useState<TeleprompterSettings>(DEFAULT_SETTINGS);

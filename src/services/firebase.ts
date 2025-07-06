@@ -1,16 +1,16 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import Constants from 'expo-constants';
 
 // Firebase configuration using Expo Constants
 const firebaseConfig = {
-  apiKey: Constants.expoConfig?.extra?.firebaseApiKey || "AIzaSyB17iE1vMzqfyTMhjTnues5mq5R5BRLBe8",
-  authDomain: Constants.expoConfig?.extra?.firebaseAuthDomain || "speaksyncmobile.firebaseapp.com",
-  projectId: Constants.expoConfig?.extra?.firebaseProjectId || "speaksyncmobile",
-  storageBucket: Constants.expoConfig?.extra?.firebaseStorageBucket || "speaksyncmobile.appspot.com",
-  messagingSenderId: Constants.expoConfig?.extra?.firebaseMessagingSenderId || "738419715683",
-  appId: Constants.expoConfig?.extra?.firebaseAppId || "1:738419715683:web:your_app_id_here"
+  apiKey: Constants.expoConfig?.extra?.['firebaseApiKey'] || "AIzaSyB17iE1vMzqfyTMhjTnues5mq5R5BRLBe8",
+  authDomain: Constants.expoConfig?.extra?.['firebaseAuthDomain'] || "speaksyncmobile.firebaseapp.com",
+  projectId: Constants.expoConfig?.extra?.['firebaseProjectId'] || "speaksyncmobile",
+  storageBucket: Constants.expoConfig?.extra?.['firebaseStorageBucket'] || "speaksyncmobile.appspot.com",
+  messagingSenderId: Constants.expoConfig?.extra?.['firebaseMessagingSenderId'] || "738419715683",
+  appId: Constants.expoConfig?.extra?.['firebaseAppId'] || "1:738419715683:web:your_app_id_here"
 };
 
 // Initialize Firebase

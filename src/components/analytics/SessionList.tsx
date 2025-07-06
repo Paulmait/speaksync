@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   View,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
@@ -10,8 +9,6 @@ import {
   Text,
   Checkbox,
   Chip,
-  IconButton,
-  Surface,
 } from 'react-native-paper';
 import { VirtualScrollView } from '../VirtualScrollView';
 import { SessionReport } from '../../types';

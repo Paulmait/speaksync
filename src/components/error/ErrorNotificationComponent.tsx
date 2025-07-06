@@ -59,6 +59,9 @@ export const ErrorNotificationComponent: React.FC<Props> = ({
 
       return () => clearTimeout(timer);
     }
+    
+    // Return undefined for the case where no cleanup is needed
+    return undefined;
   }, [slideAnim, autoHide, persistent, duration, handleDismiss]);
 
   const handleActionPress = (action: ErrorAction) => {
@@ -152,7 +155,7 @@ export const ErrorNotificationComponent: React.FC<Props> = ({
                   mode="contained"
                   onPress={() => handleActionPress(primaryAction)}
                   style={[styles.actionButton, styles.primaryAction]}
-                  disabled={primaryAction.disabled}
+                  disabled={!!primaryAction.disabled}
                   accessibilityLabel={primaryAction.label}
                 >
                   {primaryAction.label}
@@ -166,7 +169,7 @@ export const ErrorNotificationComponent: React.FC<Props> = ({
                     mode="outlined"
                     onPress={() => handleActionPress(action)}
                     style={styles.actionButton}
-                    disabled={action.disabled}
+                    disabled={!!action.disabled}
                     accessibilityLabel={action.label}
                     compact
                   >

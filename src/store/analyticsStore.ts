@@ -7,11 +7,7 @@ import {
   AnalyticsFilters, 
   AnalyticsSummary, 
   ComparisonAnalytics,
-  AnalyticsExportOptions,
-  FillerWordInstance,
-  ScriptAdherenceMetrics,
-  PaceAnalysisSegment,
-  WPMDataPoint
+  AnalyticsExportOptions
 } from '../types';
 import { analyticsService } from '../services/analyticsService';
 

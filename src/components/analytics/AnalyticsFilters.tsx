@@ -38,27 +38,33 @@ export function AnalyticsFilters({
   };
 
   const handleWPMMinChange = (text: string) => {
-    const min = parseInt(text) || undefined;
-    setFilters(prev => ({
-      ...prev,
-      wpmRange: min !== undefined 
-        ? { ...prev.wpmRange, min } 
-        : prev.wpmRange?.max 
-          ? { max: prev.wpmRange.max } 
-          : undefined,
-    }));
+    const min = parseInt(text) || null;
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      if (min !== null) {
+        newFilters.wpmRange = { ...prev.wpmRange, min };
+      } else if (prev.wpmRange?.max) {
+        newFilters.wpmRange = { max: prev.wpmRange.max };
+      } else {
+        delete newFilters.wpmRange;
+      }
+      return newFilters;
+    });
   };
 
   const handleWPMMaxChange = (text: string) => {
-    const max = parseInt(text) || undefined;
-    setFilters(prev => ({
-      ...prev,
-      wpmRange: max !== undefined 
-        ? { ...prev.wpmRange, max } 
-        : prev.wpmRange?.min 
-          ? { min: prev.wpmRange.min } 
-          : undefined,
-    }));
+    const max = parseInt(text) || null;
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      if (max !== null) {
+        newFilters.wpmRange = { ...prev.wpmRange, max };
+      } else if (prev.wpmRange?.min) {
+        newFilters.wpmRange = { min: prev.wpmRange.min };
+      } else {
+        delete newFilters.wpmRange;
+      }
+      return newFilters;
+    });
   };
 
   const formatDate = (date: Date) => {
@@ -106,7 +112,10 @@ export function AnalyticsFilters({
           {filters.dateRange && (
             <Button
               mode="text"
-              onPress={() => setFilters(prev => ({ ...prev, dateRange: undefined }))}
+              onPress={() => {
+                const { dateRange, ...rest } = filters;
+                setFilters(rest);
+              }}
               style={styles.clearButton}
             >
               Clear Date Range
@@ -159,11 +168,16 @@ export function AnalyticsFilters({
                 label="Min Duration (minutes)"
                 value={filters.minDuration ? (filters.minDuration / 60000).toString() : ''}
                 onChangeText={(text) => {
-                  const minutes = parseInt(text) || undefined;
-                  setFilters(prev => ({
-                    ...prev,
-                    minDuration: minutes ? minutes * 60000 : undefined,
-                  }));
+                  const minutes = parseInt(text) || null;
+                  setFilters(prev => {
+                    const newFilters = { ...prev };
+                    if (minutes !== null) {
+                      newFilters.minDuration = minutes * 60000;
+                    } else {
+                      delete newFilters.minDuration;
+                    }
+                    return newFilters;
+                  });
                 }}
                 keyboardType="numeric"
                 mode="outlined"
@@ -176,11 +190,16 @@ export function AnalyticsFilters({
                 label="Max Duration (minutes)"
                 value={filters.maxDuration ? (filters.maxDuration / 60000).toString() : ''}
                 onChangeText={(text) => {
-                  const minutes = parseInt(text) || undefined;
-                  setFilters(prev => ({
-                    ...prev,
-                    maxDuration: minutes ? minutes * 60000 : undefined,
-                  }));
+                  const minutes = parseInt(text) || null;
+                  setFilters(prev => {
+                    const newFilters = { ...prev };
+                    if (minutes !== null) {
+                      newFilters.maxDuration = minutes * 60000;
+                    } else {
+                      delete newFilters.maxDuration;
+                    }
+                    return newFilters;
+                  });
                 }}
                 keyboardType="numeric"
                 mode="outlined"

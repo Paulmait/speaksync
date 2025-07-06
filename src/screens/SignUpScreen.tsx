@@ -33,31 +33,41 @@ export default function SignUpScreen() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<{
+    displayName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: {
+      displayName?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
     
     if (!formData.displayName.trim()) {
-      newErrors.displayName = 'Display name is required';
+      newErrors['displayName'] = 'Display name is required';
     }
     
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors['email'] = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors['email'] = 'Please enter a valid email';
     }
     
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors['password'] = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors['password'] = 'Password must be at least 6 characters';
     }
     
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors['confirmPassword'] = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors['confirmPassword'] = 'Passwords do not match';
     }
     
     setErrors(newErrors);

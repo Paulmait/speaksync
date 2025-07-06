@@ -34,7 +34,6 @@ export class AdaptiveScrollService {
   private confidenceBuffer: number[] = [];
   
   // Advanced timing analysis
-  private speechSegments: Array<{ start: number; end: number; wpm: number }> = [];
   private pauseDetectionTimer: NodeJS.Timeout | null = null;
   
   constructor() {
@@ -53,9 +52,9 @@ export class AdaptiveScrollService {
   ): void {
     this.scriptAnalysis = scriptAnalysis;
     this.settings = { ...this.getDefaultSettings(), ...settings };
-    this.onScrollUpdate = onScrollUpdate;
-    this.onPaceChange = onPaceChange;
-    this.onScrollStateChange = onScrollStateChange;
+    this.onScrollUpdate = onScrollUpdate || (() => {});
+    this.onPaceChange = onPaceChange || (() => {});
+    this.onScrollStateChange = onScrollStateChange || (() => {});
     
     // Reset all state
     this.reset();
@@ -86,14 +85,18 @@ export class AdaptiveScrollService {
     // Calculate instantaneous WPM from recent words
     const recentTimings = this.getRecentWordTimings(5); // Last 5 words
     if (recentTimings.length >= 2) {
-      const timeDiff = (timestamp - recentTimings[0].timestamp) / 1000; // seconds
+      const firstTiming = recentTimings[0];
+      if (!firstTiming) return; // Safety check
+      const timeDiff = (timestamp - firstTiming.timestamp) / 1000; // seconds
       const wordCount = recentTimings.length;
       wordTiming.instantWPM = timeDiff > 0 ? (wordCount / timeDiff) * 60 : 0;
     }
 
     // Calculate cumulative WPM
     if (this.wordTimings.length > 0) {
-      const totalTime = (timestamp - this.wordTimings[0].timestamp) / 1000;
+      const firstTiming = this.wordTimings[0];
+      if (!firstTiming) return;
+      const totalTime = (timestamp - firstTiming.timestamp) / 1000;
       wordTiming.cumulativeWPM = totalTime > 0 ? (this.wordTimings.length / totalTime) * 60 : 0;
     }
 
@@ -183,11 +186,16 @@ export class AdaptiveScrollService {
     
     // Time since last word
     const lastTiming = this.wordTimings[this.wordTimings.length - 1];
-    this.paceMetrics.timeSinceLastWord = (now - lastTiming.timestamp) / 1000;
+    if (lastTiming) {
+      this.paceMetrics.timeSinceLastWord = (now - lastTiming.timestamp) / 1000;
+    }
     
     // Speech duration
-    if (this.wordTimings.length > 1) {
-      this.paceMetrics.speechDuration = (lastTiming.timestamp - this.wordTimings[0].timestamp) / 1000;
+    if (this.wordTimings.length > 1 && lastTiming) {
+      const firstTiming = this.wordTimings[0];
+      if (firstTiming) {
+        this.paceMetrics.speechDuration = (lastTiming.timestamp - firstTiming.timestamp) / 1000;
+      }
     }
     
     // Total words spoken
@@ -214,6 +222,7 @@ export class AdaptiveScrollService {
     
     const firstTiming = timings[0];
     const lastTiming = timings[timings.length - 1];
+    if (!firstTiming || !lastTiming) return 0;
     const duration = (lastTiming.timestamp - firstTiming.timestamp) / 1000; // seconds
     
     return duration > 0 ? (timings.length / duration) * 60 : 0;
@@ -233,14 +242,15 @@ export class AdaptiveScrollService {
     if (this.wpmBuffer.length < 3) return;
     
     const recent = this.wpmBuffer.slice(-3);
+    if (recent.length < 3 || !recent[0] || !recent[2]) return;
     const trend = recent[2] - recent[0];
     const threshold = this.paceMetrics.averageWPM * 0.1; // 10% threshold
     
     if (trend > threshold) {
-      this.paceMetrics.paceTrend = 'increasing';
+      this.paceMetrics.paceTrend = 'accelerating';
       this.paceMetrics.isAccelerating = true;
     } else if (trend < -threshold) {
-      this.paceMetrics.paceTrend = 'decreasing';
+      this.paceMetrics.paceTrend = 'decelerating';
       this.paceMetrics.isAccelerating = false;
     } else {
       this.paceMetrics.paceTrend = 'stable';
@@ -372,9 +382,9 @@ export class AdaptiveScrollService {
     
     // Apply acceleration/deceleration based on trend
     let trendMultiplier = 1;
-    if (this.paceMetrics.paceTrend === 'increasing') {
+    if (this.paceMetrics.paceTrend === 'accelerating') {
       trendMultiplier = 1.2;
-    } else if (this.paceMetrics.paceTrend === 'decreasing') {
+    } else if (this.paceMetrics.paceTrend === 'decelerating') {
       trendMultiplier = 0.8;
     }
     
@@ -393,7 +403,7 @@ export class AdaptiveScrollService {
     const alpha = this.settings.smoothingFactor;
     const previousVelocity = this.velocityBuffer[this.velocityBuffer.length - 1];
     
-    return alpha * targetVelocity + (1 - alpha) * previousVelocity;
+    return alpha * targetVelocity + (1 - alpha) * (previousVelocity || 0);
   }
 
   /**
@@ -414,7 +424,7 @@ export class AdaptiveScrollService {
       this.paceMetrics.isPaused = true;
       console.log('Speech pause detected');
       this.onPaceChange?.(this.paceMetrics);
-    }, this.settings.pauseThreshold * 1000);
+    }, this.settings.pauseThreshold * 1000) as any;
   }
 
   /**
@@ -462,7 +472,6 @@ export class AdaptiveScrollService {
     this.velocityBuffer = [];
     this.wpmBuffer = [];
     this.confidenceBuffer = [];
-    this.speechSegments = [];
     
     if (this.pauseDetectionTimer) {
       clearTimeout(this.pauseDetectionTimer);

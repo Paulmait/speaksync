@@ -241,7 +241,11 @@ export default function AnalyticsScreen({ navigation }: AnalyticsScreenProps) {
                 {filters.dateRange && (
                   <Chip
                     mode="outlined"
-                    onClose={() => setFilters(prev => ({ ...prev, dateRange: undefined }))}
+                    onClose={() => setFilters(prev => {
+                      const newFilters = { ...prev };
+                      delete newFilters.dateRange;
+                      return newFilters;
+                    })}
                   >
                     Date Range
                   </Chip>
@@ -249,7 +253,11 @@ export default function AnalyticsScreen({ navigation }: AnalyticsScreenProps) {
                 {filters.scriptIds?.length && (
                   <Chip
                     mode="outlined"
-                    onClose={() => setFilters(prev => ({ ...prev, scriptIds: undefined }))}
+                    onClose={() => setFilters(prev => {
+                      const newFilters = { ...prev };
+                      delete newFilters.scriptIds;
+                      return newFilters;
+                    })}
                   >
                     {filters.scriptIds.length} Scripts
                   </Chip>
@@ -257,7 +265,11 @@ export default function AnalyticsScreen({ navigation }: AnalyticsScreenProps) {
                 {filters.wpmRange && (
                   <Chip
                     mode="outlined"
-                    onClose={() => setFilters(prev => ({ ...prev, wpmRange: undefined }))}
+                    onClose={() => setFilters(prev => {
+                      const newFilters = { ...prev };
+                      delete newFilters.wpmRange;
+                      return newFilters;
+                    })}
                   >
                     WPM Range
                   </Chip>

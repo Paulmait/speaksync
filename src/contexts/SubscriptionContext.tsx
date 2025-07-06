@@ -21,7 +21,7 @@ interface SubscriptionContextValue {
   restorePurchases: () => Promise<boolean>;
 }
 
-const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
+export const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
 interface SubscriptionProviderProps {
   children: ReactNode;

@@ -31,7 +31,7 @@ export const SessionTimer: React.FC<SessionTimerProps> = ({
   const { subscription, usage } = useSubscriptionStatus();
   const [sessionTime, setSessionTime] = useState(0);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
   const isFreeTier = subscription?.subscriptionTier === SubscriptionTier.FREE;

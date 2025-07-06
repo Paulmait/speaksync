@@ -26,7 +26,7 @@ export const ErrorNotificationSystem: React.FC = () => {
         id: Date.now().toString(),
         message: getErrorMessage(error),
         type: getErrorType(error),
-        action: getErrorAction(error)
+        action: getErrorAction(error) || undefined
       };
       
       setNotifications(prev => [...prev, notification]);
@@ -58,7 +58,7 @@ export const ErrorNotificationSystem: React.FC = () => {
 
   useEffect(() => {
     if (notifications.length > 0 && !currentNotification) {
-      setCurrentNotification(notifications[0]);
+      setCurrentNotification(notifications[0] || null);
     }
   }, [notifications, currentNotification]);
 
@@ -82,8 +82,12 @@ export const ErrorNotificationSystem: React.FC = () => {
   };
 
   const getErrorType = (error: Error): 'error' | 'warning' | 'info' => {
-    if (error.message.includes('warning')) return 'warning';
-    if (error.message.includes('info')) return 'info';
+    if (error.message.includes('warning')) {
+      return 'warning';
+    }
+    if (error.message.includes('info')) {
+      return 'info';
+    }
     return 'error';
   };
 
@@ -100,7 +104,9 @@ export const ErrorNotificationSystem: React.FC = () => {
     return undefined;
   };
 
-  if (!currentNotification) return null;
+  if (!currentNotification) {
+    return null;
+  }
 
   return (
     <Portal>
@@ -108,7 +114,7 @@ export const ErrorNotificationSystem: React.FC = () => {
         visible={!!currentNotification}
         onDismiss={dismissNotification}
         duration={5000}
-        action={currentNotification.action}
+        {...(currentNotification.action && { action: currentNotification.action })}
       >
         {currentNotification.message}
       </Snackbar>

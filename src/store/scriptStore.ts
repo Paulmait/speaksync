@@ -66,7 +66,6 @@ export const useScriptStore = create<ScriptStore>()(
             userId: userId,
             syncStatus: 'pending',
             version: 1,
-            lastSyncedAt: undefined,
             isDeleted: false
           };
           

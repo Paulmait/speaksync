@@ -7,17 +7,14 @@ import {
   UserProgress,
   Achievement,
   UserStreak,
-  ProgressStats,
   ProgressTrend,
   ProgressDataPoint,
-  AchievementRequirement,
   SocialShare,
   WeeklyGoal,
   GamificationData,
   SessionSummaryReport
 } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { analyticsService } from './analyticsService';
 
 const STORAGE_KEYS = {
   USER_PROGRESS: '@speaksync/user_progress',

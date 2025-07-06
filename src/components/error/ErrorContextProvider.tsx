@@ -90,7 +90,7 @@ export const ErrorContextProvider: React.FC<ErrorContextProviderProps> = ({ chil
       id: Date.now().toString(),
       timestamp: Date.now(),
       message: error.message || 'An unexpected error occurred',
-      stack: error.stack,
+      stack: error.stack || '',
       category,
       severity,
       context: {},

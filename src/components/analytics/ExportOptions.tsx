@@ -11,7 +11,6 @@ import {
   Card,
   RadioButton,
   Checkbox,
-  Divider,
   ActivityIndicator,
 } from 'react-native-paper';
 import { SessionReport, AnalyticsFilters, AnalyticsExportOptions } from '../../types';

@@ -92,7 +92,11 @@ export default function SignInScreen() {
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
-                if (errors.email) setErrors({ ...errors, email: undefined });
+                if (errors.email) {
+                  const newErrors = { ...errors };
+                  delete newErrors.email;
+                  setErrors(newErrors);
+                }
               }}
               mode="outlined"
               style={styles.input}
@@ -112,7 +116,11 @@ export default function SignInScreen() {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                if (errors.password) setErrors({ ...errors, password: undefined });
+                if (errors.password) {
+                  const newErrors = { ...errors };
+                  delete newErrors.password;
+                  setErrors(newErrors);
+                }
               }}
               mode="outlined"
               style={styles.input}

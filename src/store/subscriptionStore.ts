@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Purchases from 'react-native-purchases';
-import { Platform } from 'react-native';
 import RevenueCatService from '../services/revenueCatService';
 
 export type SubscriptionTier = 'free' | 'pro' | 'studio';

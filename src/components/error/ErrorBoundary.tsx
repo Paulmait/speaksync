@@ -36,8 +36,6 @@ export class ErrorBoundary extends Component<Props, State> {
     super(props);
     this.state = {
       hasError: false,
-      error: undefined,
-      errorInfo: undefined,
       retryCount: 0,
       maxRetries: props.maxRetries || 3,
       showDetails: false,
@@ -52,12 +50,12 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, reactErrorInfo: ReactErrorInfo) {
+  override componentDidCatch(error: Error, reactErrorInfo: ReactErrorInfo) {
     const errorInfo: ErrorInfo = {
       id: this.generateErrorId(),
       timestamp: Date.now(),
       message: error.message,
-      stack: error.stack,
+      ...(error.stack && { stack: error.stack }),
       category: ErrorCategory.UI,
       severity: ErrorSeverity.HIGH,
       context: {
@@ -127,8 +125,6 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.retryCount < this.state.maxRetries) {
       this.setState(prevState => ({
         hasError: false,
-        error: undefined,
-        errorInfo: undefined,
         retryCount: prevState.retryCount + 1,
         showDetails: false,
         showNotification: false
@@ -190,13 +186,13 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ showNotification: false });
   };
 
-  componentWillUnmount() {
+  override componentWillUnmount() {
     if (this.retryTimeout) {
       clearTimeout(this.retryTimeout);
     }
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       const { error, errorInfo, retryCount, maxRetries, showDetails, showNotification } = this.state;
       const { fallback: FallbackComponent, enableRetry = true } = this.props;

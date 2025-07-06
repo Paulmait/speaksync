@@ -7,7 +7,6 @@ import {
   Card,
   Text,
   ProgressBar,
-  Surface,
 } from 'react-native-paper';
 import { AnalyticsSummary } from '../../types';
 

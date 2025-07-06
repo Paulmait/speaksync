@@ -46,7 +46,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
         </Paragraph>
         <Button 
           mode="contained" 
-          onPress={onUpgrade}
+          onPress={onUpgrade || (() => {})}
           style={styles.upgradeButton}
         >
           {ctaMessage.buttonText}

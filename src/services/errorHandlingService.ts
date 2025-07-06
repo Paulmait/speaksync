@@ -222,9 +222,9 @@ export class ErrorHandlingService {
         version: Platform.Version,
         breadcrumbs: this.getBreadcrumbs(),
         userAction: options.userAction,
-        networkState: await this.getNetworkState(),
+        networkState: (await this.getNetworkState()) || undefined,
         deviceInfo: await this.getDeviceInfo(),
-        appState: await this.getAppState()
+        appState: (await this.getAppState()) || undefined
       },
       isFatal: options.isFatal || false,
       tags: options.tags || {},
@@ -597,21 +597,31 @@ export class ErrorHandlingService {
     }
   }
 
-  private async getNetworkState(): Promise<Record<string, unknown> | null> {
+  private async getNetworkState(): Promise<{
+    isConnected: boolean;
+    type: string;
+    isInternetReachable: boolean;
+    details?: Record<string, unknown>;
+  } | null> {
     try {
       const netInfo = await NetInfo.fetch();
       return {
-        isConnected: netInfo.isConnected,
-        type: netInfo.type,
-        isInternetReachable: netInfo.isInternetReachable,
-        details: netInfo.details
+        isConnected: netInfo.isConnected || false,
+        type: netInfo.type || 'unknown',
+        isInternetReachable: netInfo.isInternetReachable || false,
+        details: netInfo.details || {}
       };
     } catch (error) {
       return null;
     }
   }
 
-  private async getDeviceInfo(): Promise<Record<string, unknown>> {
+  private async getDeviceInfo(): Promise<{
+    platform: string;
+    version: string | number;
+    isTV: boolean;
+    constants?: Record<string, unknown>;
+  }> {
     return {
       platform: Platform.OS,
       version: Platform.Version,
@@ -795,6 +805,7 @@ export class ErrorHandlingService {
           version: Platform.Version,
         },
         breadcrumbs: this.breadcrumbs,
+        isAutoSubmitted: true,
       };
 
       // Add to local crash reports
@@ -828,7 +839,7 @@ export class ErrorHandlingService {
 
       // Mark as reported in local storage
       const index = this.crashReports.findIndex(r => r.id === crashReport.id);
-      if (index >= 0) {
+      if (index >= 0 && this.crashReports[index]) {
         this.crashReports[index].reported = true;
         await this.persistCrashReports();
       }

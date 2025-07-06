@@ -80,6 +80,8 @@ export type RootStackParamList = {
   SignUp: undefined;
   Profile: undefined;
   Subscription: undefined;
+  LegalDocuments: undefined;
+  OnboardingConsent: undefined;
 };
 
 export interface TeleprompterSettings {
@@ -1106,4 +1108,9 @@ export interface WeeklyGoal {
   xpReward: number;
   isCompleted: boolean;
   weekStart: Date;
+}
+
+export interface SyncUser {
+  uid: string;
+  email: string | null;
 }

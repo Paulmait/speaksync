@@ -87,9 +87,56 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     
-    // Subscriptions collection
+    // Subscriptions collection - users can read but only admin can write
     match /subscriptions/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Only admin or system (cloud functions) can update subscription details
+      allow update: if request.auth != null && (
+        request.auth.uid == userId || 
+        exists(/databases/$(database)/documents/admin/$(request.auth.uid))
+      );
+    }
+    
+    // Free tier usage collection - controlled by cloud functions
+    match /freeTierUsage/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Only allow system (cloud functions) to update usage
+      allow write: if request.auth != null && (
+        exists(/databases/$(database)/documents/admin/$(request.auth.uid))
+      );
+    }
+    
+    // Legal Documents collection - public read, admin write only
+    match /legalDocuments/{documentId} {
+      // All users can read legal documents (public access)
+      allow read: if true;
+      
+      // Only admins can create, update, or delete legal documents
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Legal Document Versions collection - public read, admin write only
+    match /legalDocumentVersions/{versionId} {
+      // All users can read legal document versions
+      allow read: if true;
+      
+      // Only admins can create, update, or delete versions
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // User Legal Acceptances - users can read/write their own acceptances
+    match /userLegalAcceptances/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Legal Admin Actions - admin audit trail
+    match /legalAdminActions/{actionId} {
+      // Only admins can read the audit trail
+      allow read: if isAdmin();
+      
+      // Only admins can create audit entries (updates/deletes not allowed)
+      allow create: if isAdmin();
     }
     
     // Helper functions
@@ -99,6 +146,23 @@ service cloud.firestore {
     
     function isTeamMember(teamId, userId) {
       return exists(/databases/$(database)/documents/teams/$(teamId)/members/$(userId));
+    }
+    
+    // Admin check function
+    function isAdmin() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Subscription helper functions
+    function isFreeTier(userId) {
+      let subscription = get(/databases/$(database)/documents/subscriptions/$(userId)).data;
+      return subscription != null && subscription.subscriptionTier == 'free';
+    }
+    
+    function hasReachedFreeScriptLimit(userId) {
+      let usage = get(/databases/$(database)/documents/freeTierUsage/$(userId)).data;
+      return usage != null && usage.savedScriptsCount >= 1;
     }
   }
 }

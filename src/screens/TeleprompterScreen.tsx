@@ -25,6 +25,9 @@ import {
 import Slider from '@react-native-community/slider';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useScriptStore } from '../store/scriptStore';
+import { useSubscriptionContext } from '../contexts/SubscriptionContext';
+import { SessionTimer } from '../components/subscription/SessionTimer';
+import { FeatureGate } from '../components/subscription/FeatureGate';
 import { 
   SpeechRecognitionPanel, 
   KaraokeText, 
@@ -158,6 +161,9 @@ export default function TeleprompterScreen() {
   const { scriptId } = route.params;
   const { getScriptById } = useScriptStore();
   
+  // Subscription context for feature gating and usage tracking
+  const { checkFeatureAccess, getCurrentTier, getFreeTierUsage } = useSubscriptionContext();
+  
   const [script, setScript] = useState(getScriptById(scriptId));
   const [settings, setSettings] = useState<TeleprompterSettings>(DEFAULT_SETTINGS);
   const [state, setState] = useState<TeleprompterState>({
@@ -175,6 +181,10 @@ export default function TeleprompterScreen() {
   const [customColorModal, setCustomColorModal] = useState(false);
   const [customTextColor, setCustomTextColor] = useState('#FFFFFF');
   const [customBackgroundColor, setCustomBackgroundColor] = useState('#000000');
+  
+  // Session timer state for free tier tracking
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   // Speech recognition state
   const [showSpeechPanel, setShowSpeechPanel] = useState(false);
@@ -1182,6 +1192,18 @@ export default function TeleprompterScreen() {
       <StatusBar 
         hidden={isFullscreen} 
         barStyle={settings.backgroundColor === '#000000' ? 'light-content' : 'dark-content'} 
+      />
+      
+      {/* Session Timer for Free Tier Users */}
+      <SessionTimer 
+        isActive={isSessionActive}
+        onTimeLimit={() => {
+          setIsSessionActive(false);
+          setShowUpgradeModal(true);
+        }}
+        onUpgrade={() => {
+          navigation.navigate('Subscription');
+        }}
       />
       
       {!isFullscreen && (

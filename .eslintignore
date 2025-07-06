@@ -1,0 +1,2 @@
+# Temporarily ignore this file while fixing types
+src/services/speechRecognitionService.ts

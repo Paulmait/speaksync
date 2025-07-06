@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Script, ScriptStore, AuthState, SyncState, User } from '../types';
+import { Script, ScriptStore } from '../types';
 import { authService } from '../services/authService';
 import { syncService } from '../services/syncService';
 import { networkService } from '../services/networkService';
+import { LoggingService } from '../services/loggingService';
+import { ErrorCategory, ErrorSeverity } from '../types/errorTypes';
+import SubscriptionService from '../services/subscriptionService';
+ 
+import { User as FirebaseUser } from 'firebase/auth';
 
 export const useScriptStore = create<ScriptStore>()(
   persist(
@@ -27,48 +32,94 @@ export const useScriptStore = create<ScriptStore>()(
       
       // Script operations with optimistic updates
       addScript: async (scriptData) => {
-        const newScript: Script = {
-          ...scriptData,
-          id: Date.now().toString(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          userId: get().authState.user?.uid,
-          syncStatus: 'pending',
-          version: 1,
-          lastSyncedAt: undefined,
-          isDeleted: false
-        };
+        const userId = get().authState.user?.uid;
         
-        // Optimistic update
-        set((state) => ({
-          scripts: [newScript, ...state.scripts],
-          syncState: {
-            ...state.syncState,
-            pendingOperations: state.syncState.pendingOperations + 1
+        if (!userId) {
+          const logger = LoggingService.getInstance();
+          logger.error('Failed to create script: User not authenticated', new Error('User not authenticated'), {
+            category: ErrorCategory.VALIDATION,
+            severity: ErrorSeverity.MEDIUM
+          });
+          throw new Error('User not authenticated');
+        }
+        
+        try {
+          // First, check subscription status
+          const subscriptionContext = SubscriptionService.getInstance().getSubscriptionContext();
+          
+          // Check if free user has reached script limit
+          if (subscriptionContext.subscription.subscriptionTier === 'free' && 
+              subscriptionContext.hasReachedFreeLimit('scripts')) {
+            const logger = LoggingService.getInstance();
+            logger.info('Free tier script limit reached', {
+              category: ErrorCategory.SUBSCRIPTION,
+              userId: userId
+            });
+            throw new Error('Free tier script limit reached. Please upgrade to create more scripts.');
           }
-        }));
-
-        // Sync to cloud if online
-        if (get().syncState.isOnline && get().authState.user) {
-          try {
-            await get().syncScripts();
-          } catch (error) {
-            console.error('Failed to sync new script:', error);
-            // Mark as error but keep local copy
-            set((state) => ({
-              scripts: state.scripts.map(s => 
-                s.id === newScript.id 
-                  ? { ...s, syncStatus: 'error' as const }
-                  : s
-              )
-            }));
+          
+          const newScript: Script = {
+            ...scriptData,
+            id: Date.now().toString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            userId: userId,
+            syncStatus: 'pending',
+            version: 1,
+            lastSyncedAt: undefined,
+            isDeleted: false
+          };
+          
+          // Optimistic update
+          set((state) => ({
+            scripts: [newScript, ...state.scripts],
+            syncState: {
+              ...state.syncState,
+              pendingOperations: state.syncState.pendingOperations + 1
+            }
+          }));
+  
+          // Track script creation for free tier users
+          if (subscriptionContext.subscription.subscriptionTier === 'free') {
+            await SubscriptionService.getInstance().trackScriptCreation(userId);
           }
+  
+          // Sync to cloud if online
+          if (get().syncState.isOnline) {
+            try {
+              await get().syncScripts();
+            } catch (error) {
+              const logger = LoggingService.getInstance();
+              logger.error('Failed to sync new script', error instanceof Error ? error : new Error(String(error)), {
+                category: ErrorCategory.SYNC,
+                severity: ErrorSeverity.MEDIUM,
+                scriptId: newScript.id
+              });
+              // Mark as error but keep local copy
+              set((state) => ({
+                scripts: state.scripts.map(s => 
+                  s.id === newScript.id 
+                    ? { ...s, syncStatus: 'error' as const }
+                    : s
+                )
+              }));
+            }
+          }
+        } catch (error) {
+          const logger = LoggingService.getInstance();
+          logger.error('Failed to create script', error instanceof Error ? error : new Error(String(error)), {
+            category: ErrorCategory.SUBSCRIPTION,
+            severity: ErrorSeverity.MEDIUM
+          });
+          throw error;
         }
       },
       
       updateScript: async (id, updates) => {
         const currentScript = get().scripts.find(s => s.id === id);
-        if (!currentScript) return;
+        if (!currentScript) {
+          return;
+        }
 
         const updatedScript = {
           ...currentScript,
@@ -96,7 +147,12 @@ export const useScriptStore = create<ScriptStore>()(
           try {
             await get().syncScripts();
           } catch (error) {
-            console.error('Failed to sync script update:', error);
+            const logger = LoggingService.getInstance();
+            logger.error('Failed to sync script update', error instanceof Error ? error : new Error(String(error)), {
+              category: ErrorCategory.SYNC,
+              severity: ErrorSeverity.MEDIUM,
+              scriptId: currentScript.id
+            });
             set((state) => ({
               scripts: state.scripts.map(s => 
                 s.id === id 
@@ -110,7 +166,9 @@ export const useScriptStore = create<ScriptStore>()(
       
       deleteScript: async (id) => {
         const scriptToDelete = get().scripts.find(s => s.id === id);
-        if (!scriptToDelete) return;
+        if (!scriptToDelete) {
+          return;
+        }
 
         // Optimistic update - mark as deleted
         const deletedScript = {
@@ -138,7 +196,12 @@ export const useScriptStore = create<ScriptStore>()(
               scripts: state.scripts.filter(s => s.id !== id)
             }));
           } catch (error) {
-            console.error('Failed to sync script deletion:', error);
+            const logger = LoggingService.getInstance();
+            logger.error('Failed to sync script deletion', error instanceof Error ? error : new Error(String(error)), {
+              category: ErrorCategory.SYNC,
+              severity: ErrorSeverity.MEDIUM,
+              scriptId: scriptToDelete.id
+            });
             set((state) => ({
               scripts: state.scripts.map(s => 
                 s.id === id 
@@ -149,7 +212,10 @@ export const useScriptStore = create<ScriptStore>()(
           }
         } else {
           // If offline, keep marked as deleted for later sync
-          console.log('Offline: Script marked for deletion');
+          const logger = LoggingService.getInstance();
+          logger.info('Offline: Script marked for deletion', {
+            scriptId: scriptToDelete.id
+          });
         }
       },
       
@@ -169,12 +235,12 @@ export const useScriptStore = create<ScriptStore>()(
 
         try {
           const user = await authService.signIn(email, password);
-          set((state) => ({
+          set({
             authState: { user, isLoading: false, error: null }
-          }));
+          });
           
           // Initialize sync service with user
-          syncService.setUser({ uid: user.uid, email: user.email } as any);
+          syncService.setUser(user as unknown as FirebaseUser);
           
           // Trigger initial sync
           await get().syncScripts();
@@ -197,12 +263,12 @@ export const useScriptStore = create<ScriptStore>()(
 
         try {
           const user = await authService.signUp(email, password, displayName);
-          set((state) => ({
+          set({
             authState: { user, isLoading: false, error: null }
-          }));
+          });
           
           // Initialize sync service with user
-          syncService.setUser({ uid: user.uid, email: user.email } as any);
+          syncService.setUser(user as unknown as FirebaseUser);
         } catch (error) {
           set((state) => ({
             authState: {
@@ -268,7 +334,11 @@ export const useScriptStore = create<ScriptStore>()(
             }
           }));
         } catch (error) {
-          console.error('Sync failed:', error);
+          const logger = LoggingService.getInstance();
+          logger.error('Sync failed', error instanceof Error ? error : new Error(String(error)), {
+            category: ErrorCategory.SYNC,
+            severity: ErrorSeverity.HIGH
+          });
           set((state) => ({
             syncState: {
               ...state.syncState,
@@ -301,7 +371,11 @@ export const useScriptStore = create<ScriptStore>()(
             )
           }));
         } catch (error) {
-          console.error('Failed to resolve conflict:', error);
+          const logger = LoggingService.getInstance();
+          logger.error('Failed to resolve script conflict', error instanceof Error ? error : new Error(String(error)), {
+            category: ErrorCategory.SYNC,
+            severity: ErrorSeverity.HIGH
+          });
         }
       },
       
@@ -359,7 +433,7 @@ authService.addAuthStateListener((user) => {
   }));
   
   // Set user in sync service
-  syncService.setUser(user ? { uid: user.uid, email: user.email } as any : null);
+  syncService.setUser(user as unknown as FirebaseUser | null);
   
   // Sync when user signs in
   if (user) {

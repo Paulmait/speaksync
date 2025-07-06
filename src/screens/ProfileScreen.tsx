@@ -229,6 +229,14 @@ export default function ProfileScreen() {
             description="Local + Cloud Sync"
             left={() => <List.Icon icon="database" />}
           />
+          
+          <List.Item
+            title="Legal Documents"
+            description="Privacy, Terms & AI Disclaimer"
+            left={() => <List.Icon icon="file-document" />}
+            right={() => <List.Icon icon="chevron-right" />}
+            onPress={() => navigation.navigate('LegalDocuments' as never)}
+          />
         </Card.Content>
       </Card>
 

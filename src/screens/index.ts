@@ -9,3 +9,5 @@ export { default as TeamManagementScreen } from './TeamManagementScreen';
 export { default as AnalyticsScreen } from './AnalyticsScreen';
 export { default as SessionDetailScreen } from './SessionDetailScreen';
 export { default as SubscriptionScreen } from './SubscriptionScreen';
+export { default as LegalDocumentsScreen } from './LegalDocumentsScreen';
+export { default as OnboardingConsentScreen } from './OnboardingConsentScreen';

@@ -330,9 +330,41 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-4">SpeakSync</h3>
-            <p className="text-gray-400 mb-4">
+            <p className="text-gray-400 mb-6">
               Professional teleprompter solutions for modern creators
             </p>
+            
+            {/* Legal Links */}
+            <div className="flex justify-center space-x-6 mb-6 text-sm">
+              <a 
+                href="/legal" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Legal Documents
+              </a>
+              <span className="text-gray-600">•</span>
+              <a 
+                href="/legal#privacy-policy" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Privacy Policy
+              </a>
+              <span className="text-gray-600">•</span>
+              <a 
+                href="/legal#terms-of-use" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Terms of Use
+              </a>
+              <span className="text-gray-600">•</span>
+              <a 
+                href="/legal#ai-disclaimer" 
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                AI Disclaimer
+              </a>
+            </div>
+            
             <p className="text-gray-500 text-sm">
               © 2024 SpeakSync. All rights reserved.
             </p>

@@ -15,11 +15,18 @@ import {
   Surface,
   Banner,
   Chip,
+  ProgressBar,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useScriptStore } from '../store/scriptStore';
+import { useSubscriptionContext } from '../contexts/SubscriptionContext';
+import { FeatureGate } from '../components/subscription/FeatureGate';
+import { UsageTracker } from '../components/subscription/UsageTracker';
+import BrandedHeader from '../components/ui/BrandedHeader';
 import { RootStackParamList, Script } from '../types';
+import { SubscriptionTier, CtaType } from '../types/subscriptionTypes';
+import { BRAND_COLORS } from '../constants/branding';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -29,7 +36,15 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { scripts, deleteScript, syncState, syncScripts } = useScriptStore();
+  const { 
+    checkFeatureAccess, 
+    checkFreeLimit, 
+    getCurrentTier, 
+    getFreeTierUsage,
+    getCtaMessage 
+  } = useSubscriptionContext();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
 
   // Filter out deleted scripts and apply search
   const visibleScripts = scripts.filter(script => !script.isDeleted);
@@ -38,7 +53,33 @@ export default function HomeScreen() {
     script.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Get usage info for free tier users
+  const currentTier = getCurrentTier();
+  const freeTierUsage = getFreeTierUsage();
+  const isFreeTier = currentTier === SubscriptionTier.FREE;
+  const hasReachedScriptLimit = checkFreeLimit('scripts');
+
   const handleAddScript = () => {
+    // Check if free user has reached script limit
+    if (isFreeTier && hasReachedScriptLimit) {
+      const ctaMessage = getCtaMessage(CtaType.SCRIPT_LIMIT);
+      Alert.alert(
+        ctaMessage.title,
+        ctaMessage.description,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: ctaMessage.buttonText,
+            onPress: () => navigation.navigate('Subscription'),
+          },
+        ]
+      );
+      return;
+    }
+    
     navigation.navigate('ScriptEditor', {});
   };
 
@@ -181,6 +222,16 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <BrandedHeader
+        title="SpeakSync"
+        showLogo={true}
+        rightAction={{
+          icon: "account-circle",
+          onPress: () => navigation.navigate('Profile'),
+          testID: "profile-button"
+        }}
+      />
+      
       {/* Offline Banner */}
       {!syncState.isOnline && (
         <Banner
@@ -233,16 +284,52 @@ export default function HomeScreen() {
           <Text variant="headlineSmall" style={styles.headerTitle}>
             My Scripts
           </Text>
-          <IconButton
-            icon="chart-line"
-            mode="contained"
-            iconColor="#ffffff"
-            containerColor="#6366f1"
-            size={20}
-            onPress={() => navigation.navigate('Analytics')}
-          />
+          <FeatureGate 
+            feature="analytics"
+            onUpgrade={() => navigation.navigate('Subscription')}
+            fallback={
+              <IconButton
+                icon="chart-line"
+                mode="contained-tonal"
+                iconColor="#9ca3af"
+                containerColor="#e5e7eb"
+                size={20}
+                onPress={() => {
+                  const ctaMessage = getCtaMessage(CtaType.FEATURE_LOCKED);
+                  Alert.alert(
+                    ctaMessage.title,
+                    ctaMessage.description,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: ctaMessage.buttonText, 
+                        onPress: () => navigation.navigate('Subscription') 
+                      }
+                    ]
+                  );
+                }}
+              />
+            }
+          >
+            <IconButton
+              icon="chart-line"
+              mode="contained"
+              iconColor="#ffffff"
+              containerColor="#6366f1"
+              size={20}
+              onPress={() => navigation.navigate('Analytics')}
+            />
+          </FeatureGate>
         </View>
       </Surface>
+
+      {/* Usage Tracker for Free Tier */}
+      {isFreeTier && (
+        <UsageTracker 
+          type="scripts"
+          onUpgrade={() => navigation.navigate('Subscription')}
+        />
+      )}
 
       <Searchbar
         placeholder="Search scripts..."

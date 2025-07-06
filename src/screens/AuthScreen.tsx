@@ -4,6 +4,7 @@ import { Text, Button, Surface } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
+import { BRAND_ASSETS, BRAND_COLORS } from '../constants/branding';
 
 type AuthScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Auth'>;
 
@@ -14,9 +15,11 @@ export default function AuthScreen() {
     <View style={styles.container}>
       <Surface style={styles.surface} elevation={2}>
         <View style={styles.logoContainer}>
-          <Text variant="headlineLarge" style={styles.logo}>
-            📺 SpeakSync
-          </Text>
+          <Image
+            source={BRAND_ASSETS.LOGO.FULL}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text variant="titleMedium" style={styles.tagline}>
             Your Professional Teleprompter
           </Text>
@@ -71,33 +74,33 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: BRAND_COLORS.GRAY_LIGHT,
     justifyContent: 'center',
     padding: 20,
   },
   surface: {
     padding: 32,
     borderRadius: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: BRAND_COLORS.WHITE,
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 32,
   },
   logo: {
-    color: '#6366f1',
-    fontWeight: 'bold',
+    width: 180,
+    height: 120,
     marginBottom: 8,
   },
   tagline: {
-    color: '#6b7280',
+    color: BRAND_COLORS.GRAY_DARK,
     textAlign: 'center',
   },
   contentContainer: {
     marginBottom: 32,
   },
   description: {
-    color: '#374151',
+    color: BRAND_COLORS.BLACK,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 24,
@@ -106,7 +109,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   feature: {
-    color: '#6b7280',
+    color: BRAND_COLORS.GRAY_DARK,
     lineHeight: 20,
   },
   buttonContainer: {
@@ -116,17 +119,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   primaryButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: BRAND_COLORS.PRIMARY_BLUE,
   },
   buttonLabel: {
     fontSize: 16,
     fontWeight: '600',
   },
   secondaryButton: {
-    borderColor: '#6366f1',
+    borderColor: BRAND_COLORS.PRIMARY_BLUE,
   },
   secondaryButtonLabel: {
-    color: '#6366f1',
+    color: BRAND_COLORS.PRIMARY_BLUE,
     fontSize: 14,
   },
 });

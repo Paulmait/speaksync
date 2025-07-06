@@ -1,482 +1,812 @@
 import {
   doc,
   getDoc,
+  setDoc,
   updateDoc,
   onSnapshot,
   serverTimestamp,
+  increment,
+  runTransaction,
   Unsubscribe,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
+import { Platform } from 'react-native';
 import {
-  Subscription,
   SubscriptionTier,
-  SubscriptionFeatures,
-  SubscriptionUsage,
-  FeatureGate,
-  FeatureName,
-  BillingInfo,
-  Invoice,
-  PaymentMethod,
-} from '../types';
+  SubscriptionStatus,
+  UserSubscription,
+  FreeTierUsage,
+  FeatureFlags,
+  FREE_TIER_LIMITS,
+  TierFeatureMapping,
+  CtaType,
+  CtaMessage,
+  SubscriptionContext,
+} from '../types/subscriptionTypes';
+import { ErrorCategory, ErrorSeverity } from '../types/errorTypes';
+import { LoggingService } from './loggingService';
+import NetInfo from '@react-native-community/netinfo';
+import RevenueCatService from './revenueCatService';
 
+/**
+ * Service for managing subscriptions, feature access, and usage tracking
+ */
 class SubscriptionService {
-  private readonly FEATURE_LIMITS: Record<SubscriptionTier, SubscriptionFeatures> = {
-    free: {
-      maxScripts: 5,
-      maxTeams: 1,
-      maxTeamMembers: 3,
-      maxStorageGB: 0.1,
-      cloudSync: false,
-      teamCollaboration: false,
-      advancedAnalytics: false,
-      prioritySupport: false,
-      customBranding: false,
-      apiAccess: false,
-      exportOptions: ['txt'],
-      integrations: [],
-    },
-    personal: {
-      maxScripts: 50,
-      maxTeams: 3,
-      maxTeamMembers: 5,
-      maxStorageGB: 2,
-      cloudSync: true,
-      teamCollaboration: true,
-      advancedAnalytics: false,
-      prioritySupport: false,
-      customBranding: false,
-      apiAccess: false,
-      exportOptions: ['txt', 'pdf', 'docx'],
-      integrations: ['google-drive', 'dropbox'],
-    },
-    business: {
-      maxScripts: 500,
-      maxTeams: 10,
-      maxTeamMembers: 50,
-      maxStorageGB: 20,
-      cloudSync: true,
-      teamCollaboration: true,
-      advancedAnalytics: true,
-      prioritySupport: true,
-      customBranding: true,
-      apiAccess: true,
-      exportOptions: ['txt', 'pdf', 'docx', 'html', 'rtf'],
-      integrations: ['google-drive', 'dropbox', 'onedrive', 'sharepoint', 'slack'],
-    },
-    enterprise: {
-      maxScripts: -1, // Unlimited
-      maxTeams: -1, // Unlimited
-      maxTeamMembers: 500,
-      maxStorageGB: 100,
-      cloudSync: true,
-      teamCollaboration: true,
-      advancedAnalytics: true,
-      prioritySupport: true,
-      customBranding: true,
-      apiAccess: true,
-      exportOptions: ['txt', 'pdf', 'docx', 'html', 'rtf', 'xml', 'json'],
-      integrations: ['google-drive', 'dropbox', 'onedrive', 'sharepoint', 'slack', 'teams', 'zoom', 'custom'],
-    },
-  };
+  private static instance: SubscriptionService | null = null;
+  private logger: LoggingService;
+  private userSubscription: UserSubscription | null = null;
+  private freeTierUsage: FreeTierUsage | null = null;
+  private unsubscribeListeners: Unsubscribe[] = [];
+  private revenueCatService: RevenueCatService;
 
-  private readonly PRICING: Record<SubscriptionTier, { monthly: number; yearly: number }> = {
-    free: { monthly: 0, yearly: 0 },
-    personal: { monthly: 9.99, yearly: 99.99 },
-    business: { monthly: 29.99, yearly: 299.99 },
-    enterprise: { monthly: 99.99, yearly: 999.99 },
-  };
+  private constructor() {
+    this.logger = LoggingService.getInstance();
+    this.revenueCatService = RevenueCatService.getInstance();
+  }
 
-  async getSubscription(userId: string): Promise<Subscription | null> {
-    try {
-      const subscriptionDoc = await getDoc(doc(db, 'subscriptions', userId));
-      
-      if (!subscriptionDoc.exists()) {
-        // Create a default free subscription
-        return this.createFreeSubscription(userId);
-      }
-
-      const data = subscriptionDoc.data();
-      return {
-        id: subscriptionDoc.id,
-        ...data,
-        currentPeriodStart: data.currentPeriodStart?.toDate() || new Date(),
-        currentPeriodEnd: data.currentPeriodEnd?.toDate() || new Date(),
-        trialStart: data.trialStart?.toDate(),
-        trialEnd: data.trialEnd?.toDate(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        usage: {
-          ...data.usage,
-          lastUpdated: data.usage?.lastUpdated?.toDate() || new Date(),
-        },
-      } as Subscription;
-    } catch (error) {
-      console.error('Error getting subscription:', error);
-      throw new Error('Failed to get subscription');
+  /**
+   * Get the singleton instance of SubscriptionService
+   */
+  public static getInstance(): SubscriptionService {
+    if (!SubscriptionService.instance) {
+      SubscriptionService.instance = new SubscriptionService();
     }
+    return SubscriptionService.instance;
   }
 
-  private async createFreeSubscription(userId: string): Promise<Subscription> {
-    const now = new Date();
-    const subscription: Subscription = {
-      id: userId,
-      userId,
-      tier: 'free',
-      status: 'active',
-      currentPeriodStart: now,
-      currentPeriodEnd: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()),
-      cancelAtPeriodEnd: false,
-      features: this.FEATURE_LIMITS.free,
-      usage: {
-        scriptsUsed: 0,
-        teamsUsed: 0,
-        storageUsedGB: 0,
-        teamMembersUsed: 0,
-        lastUpdated: now,
-      },
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await updateDoc(doc(db, 'subscriptions', userId), {
-      ...subscription,
-      currentPeriodStart: serverTimestamp(),
-      currentPeriodEnd: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      'usage.lastUpdated': serverTimestamp(),
-    });
-
-    return subscription;
-  }
-
-  async updateSubscription(userId: string, tier: SubscriptionTier): Promise<void> {
+  /**
+   * Initialize the subscription service and RevenueCat
+   */
+  public async initialize(): Promise<void> {
     try {
-      const subscriptionRef = doc(db, 'subscriptions', userId);
-      const now = new Date();
-      
-      await updateDoc(subscriptionRef, {
-        tier,
-        features: this.FEATURE_LIMITS[tier],
-        updatedAt: serverTimestamp(),
-        // Update current period based on billing cycle
-        currentPeriodStart: serverTimestamp(),
-        currentPeriodEnd: new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()),
+      // Initialize RevenueCat
+      const apiKey = RevenueCatService.getPlatformApiKey();
+      await this.revenueCatService.initialize({
+        apiKey,
+        debugMode: __DEV__,
       });
-    } catch (error) {
-      console.error('Error updating subscription:', error);
-      throw new Error('Failed to update subscription');
-    }
-  }
 
-  async cancelSubscription(userId: string): Promise<void> {
-    try {
-      const subscriptionRef = doc(db, 'subscriptions', userId);
-      await updateDoc(subscriptionRef, {
-        cancelAtPeriodEnd: true,
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Error canceling subscription:', error);
-      throw new Error('Failed to cancel subscription');
-    }
-  }
-
-  async reactivateSubscription(userId: string): Promise<void> {
-    try {
-      const subscriptionRef = doc(db, 'subscriptions', userId);
-      await updateDoc(subscriptionRef, {
-        cancelAtPeriodEnd: false,
-        status: 'active',
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Error reactivating subscription:', error);
-      throw new Error('Failed to reactivate subscription');
-    }
-  }
-
-  async updateUsage(userId: string, usage: Partial<SubscriptionUsage>): Promise<void> {
-    try {
-      const subscriptionRef = doc(db, 'subscriptions', userId);
-      await updateDoc(subscriptionRef, {
-        usage: {
-          ...usage,
-          lastUpdated: serverTimestamp(),
-        },
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Error updating usage:', error);
-      throw new Error('Failed to update usage');
-    }
-  }
-
-  checkFeature(feature: FeatureName, subscription: Subscription | null): FeatureGate {
-    if (!subscription) {
-      return {
-        feature,
-        enabled: false,
-        tier: 'free',
-        reason: 'No subscription found',
-        upgradeUrl: this.getUpgradeUrl(feature),
-      };
-    }
-
-    const features = subscription.features;
-    let enabled = false;
-    let reason: string | undefined;
-
-    switch (feature) {
-      case 'unlimited_scripts':
-        enabled = features.maxScripts === -1;
-        reason = enabled ? undefined : `Limited to ${features.maxScripts} scripts`;
-        break;
-      case 'team_collaboration':
-        enabled = features.teamCollaboration;
-        reason = enabled ? undefined : 'Team collaboration not available';
-        break;
-      case 'advanced_analytics':
-        enabled = features.advancedAnalytics;
-        reason = enabled ? undefined : 'Advanced analytics not available';
-        break;
-      case 'priority_support':
-        enabled = features.prioritySupport;
-        reason = enabled ? undefined : 'Priority support not available';
-        break;
-      case 'custom_branding':
-        enabled = features.customBranding;
-        reason = enabled ? undefined : 'Custom branding not available';
-        break;
-      case 'api_access':
-        enabled = features.apiAccess;
-        reason = enabled ? undefined : 'API access not available';
-        break;
-      case 'bulk_export':
-        enabled = features.exportOptions.length > 1;
-        reason = enabled ? undefined : 'Limited export options';
-        break;
-      case 'integrations':
-        enabled = features.integrations.length > 0;
-        reason = enabled ? undefined : 'Integrations not available';
-        break;
-      case 'real_time_collaboration':
-        enabled = features.teamCollaboration && subscription.tier !== 'free';
-        reason = enabled ? undefined : 'Real-time collaboration not available';
-        break;
-      case 'version_history':
-        enabled = subscription.tier !== 'free';
-        reason = enabled ? undefined : 'Version history not available';
-        break;
-      default:
-        enabled = false;
-        reason = 'Unknown feature';
-    }
-
-    return {
-      feature,
-      enabled,
-      tier: subscription.tier,
-      reason,
-      upgradeUrl: enabled ? undefined : this.getUpgradeUrl(feature),
-    };
-  }
-
-  canUseFeature(feature: FeatureName, subscription: Subscription | null): boolean {
-    return this.checkFeature(feature, subscription).enabled;
-  }
-
-  getUpgradeUrl(feature: FeatureName): string {
-    // Return appropriate upgrade URL based on feature
-    const baseUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://speaksync.app';
-    return `${baseUrl}/pricing?feature=${feature}`;
-  }
-
-  async checkUsageLimits(userId: string): Promise<{
-    scriptsLimitReached: boolean;
-    teamsLimitReached: boolean;
-    storageLimitReached: boolean;
-    teamMembersLimitReached: boolean;
-    warnings: string[];
-  }> {
-    try {
-      const subscription = await this.getSubscription(userId);
-      if (!subscription) {
-        return {
-          scriptsLimitReached: true,
-          teamsLimitReached: true,
-          storageLimitReached: true,
-          teamMembersLimitReached: true,
-          warnings: ['No subscription found'],
-        };
-      }
-
-      const { features, usage } = subscription;
-      const warnings: string[] = [];
-
-      const scriptsLimitReached = features.maxScripts !== -1 && usage.scriptsUsed >= features.maxScripts;
-      const teamsLimitReached = features.maxTeams !== -1 && usage.teamsUsed >= features.maxTeams;
-      const storageLimitReached = usage.storageUsedGB >= features.maxStorageGB;
-      const teamMembersLimitReached = usage.teamMembersUsed >= features.maxTeamMembers;
-
-      // Add warnings when approaching limits
-      if (features.maxScripts !== -1 && usage.scriptsUsed >= features.maxScripts * 0.8) {
-        warnings.push(`Approaching script limit (${usage.scriptsUsed}/${features.maxScripts})`);
-      }
-      
-      if (features.maxTeams !== -1 && usage.teamsUsed >= features.maxTeams * 0.8) {
-        warnings.push(`Approaching team limit (${usage.teamsUsed}/${features.maxTeams})`);
-      }
-
-      if (usage.storageUsedGB >= features.maxStorageGB * 0.8) {
-        warnings.push(`Approaching storage limit (${usage.storageUsedGB.toFixed(2)}GB/${features.maxStorageGB}GB)`);
-      }
-
-      return {
-        scriptsLimitReached,
-        teamsLimitReached,
-        storageLimitReached,
-        teamMembersLimitReached,
-        warnings,
-      };
-    } catch (error) {
-      console.error('Error checking usage limits:', error);
-      return {
-        scriptsLimitReached: true,
-        teamsLimitReached: true,
-        storageLimitReached: true,
-        teamMembersLimitReached: true,
-        warnings: ['Error checking limits'],
-      };
-    }
-  }
-
-  subscribeToSubscription(userId: string, callback: (subscription: Subscription | null) => void): Unsubscribe {
-    return onSnapshot(
-      doc(db, 'subscriptions', userId),
-      (doc) => {
-        if (!doc.exists()) {
-          callback(null);
-          return;
+      // Set up auth state listener
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          // Get subscription from Firestore
+          await this.fetchUserSubscription(user.uid);
+          
+          // Link user to RevenueCat
+          await this.revenueCatService.setUserId(user.uid);
+          
+          // Listen for subscription changes
+          this.setupSubscriptionListeners(user.uid);
+        } else {
+          // Clean up listeners when user signs out
+          this.clearListeners();
+          this.userSubscription = null;
+          this.freeTierUsage = null;
         }
+      });
 
-        const data = doc.data();
-        const subscription: Subscription = {
-          id: doc.id,
-          ...data,
-          currentPeriodStart: data.currentPeriodStart?.toDate() || new Date(),
-          currentPeriodEnd: data.currentPeriodEnd?.toDate() || new Date(),
-          trialStart: data.trialStart?.toDate(),
-          trialEnd: data.trialEnd?.toDate(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          usage: {
-            ...data.usage,
-            lastUpdated: data.usage?.lastUpdated?.toDate() || new Date(),
-          },
-        } as Subscription;
+    } catch (error) {
+      this.logger.error("Failed to initialize subscription service", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
+      });
+    }
+  }
 
-        callback(subscription);
+  /**
+   * Set up listeners for subscription and usage changes
+   */
+  private setupSubscriptionListeners(userId: string): void {
+    // Clear any existing listeners
+    this.clearListeners();
+
+    // Subscribe to subscription changes
+    const subscriptionUnsubscribe = onSnapshot(
+      doc(db, 'subscriptions', userId),
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          this.userSubscription = {
+            subscriptionTier: data.subscriptionTier,
+            subscriptionStatus: data.subscriptionStatus,
+            subscriptionStartDate: data.subscriptionStartDate?.toMillis() || Date.now(),
+            subscriptionEndDate: data.subscriptionEndDate?.toMillis(),
+            freeTrialEndDate: data.freeTrialEndDate?.toMillis(),
+            lastPaymentDate: data.lastPaymentDate?.toMillis(),
+            nextBillingDate: data.nextBillingDate?.toMillis(),
+            stripeCustomerId: data.stripeCustomerId,
+            revenueCatUserId: data.revenueCatUserId,
+            cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+            paymentMethod: data.paymentMethod,
+            receiptData: data.receiptData,
+          };
+        } else {
+          // No subscription document, create default free subscription
+          this.createDefaultSubscription(userId);
+        }
       },
       (error) => {
-        console.error('Error subscribing to subscription:', error);
-        callback(null);
+        this.logger.error("Error listening to subscription changes", 
+          error instanceof Error ? error : new Error(String(error)), {
+          category: ErrorCategory.SUBSCRIPTION,
+          severity: ErrorSeverity.MEDIUM
+        });
       }
     );
+
+    // Subscribe to free tier usage changes
+    const usageUnsubscribe = onSnapshot(
+      doc(db, 'freeTierUsage', userId),
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          this.freeTierUsage = {
+            freeSessionCount: data.freeSessionCount || 0,
+            freeSessionDurationAccumulated: data.freeSessionDurationAccumulated || 0,
+            savedScriptsCount: data.savedScriptsCount || 0,
+            lastUpdated: data.lastUpdated?.toMillis() || Date.now(),
+          };
+        } else {
+          // No usage document, create default
+          this.createDefaultFreeTierUsage(userId);
+        }
+      },
+      (error) => {
+        this.logger.error("Error listening to usage changes", 
+          error instanceof Error ? error : new Error(String(error)), {
+          category: ErrorCategory.SUBSCRIPTION,
+          severity: ErrorSeverity.MEDIUM
+        });
+      }
+    );
+
+    // Store unsubscribe functions
+    this.unsubscribeListeners.push(subscriptionUnsubscribe, usageUnsubscribe);
   }
 
-  // Payment and billing methods (to be implemented with Stripe/RevenueCat)
-  async createPaymentSession(userId: string, tier: SubscriptionTier, billingInterval: 'monthly' | 'yearly'): Promise<string> {
-    // This would integrate with Stripe for web or RevenueCat for mobile
-    // For now, return a placeholder URL
-    const price = this.PRICING[tier][billingInterval];
-    console.log(`Creating payment session for ${tier} (${billingInterval}): $${price}`);
-    
-    // In a real implementation, this would create a Stripe Checkout session
-    // or handle RevenueCat subscription purchase
-    return `https://checkout.stripe.com/pay/placeholder?tier=${tier}&interval=${billingInterval}`;
+  /**
+   * Clear all Firestore listeners
+   */
+  private clearListeners(): void {
+    this.unsubscribeListeners.forEach(unsubscribe => unsubscribe());
+    this.unsubscribeListeners = [];
   }
 
-  async handlePaymentSuccess(userId: string, tier: SubscriptionTier, stripeSubscriptionId?: string): Promise<void> {
+  /**
+   * Fetch user subscription from Firestore
+   */
+  private async fetchUserSubscription(userId: string): Promise<void> {
     try {
-      await this.updateSubscription(userId, tier);
+      const docRef = doc(db, 'subscriptions', userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        this.userSubscription = {
+          subscriptionTier: data.subscriptionTier,
+          subscriptionStatus: data.subscriptionStatus,
+          subscriptionStartDate: data.subscriptionStartDate?.toMillis() || Date.now(),
+          subscriptionEndDate: data.subscriptionEndDate?.toMillis(),
+          freeTrialEndDate: data.freeTrialEndDate?.toMillis(),
+          lastPaymentDate: data.lastPaymentDate?.toMillis(),
+          nextBillingDate: data.nextBillingDate?.toMillis(),
+          stripeCustomerId: data.stripeCustomerId,
+          revenueCatUserId: data.revenueCatUserId,
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd,
+          paymentMethod: data.paymentMethod,
+          receiptData: data.receiptData,
+        };
+      } else {
+        // No subscription document found, create default
+        await this.createDefaultSubscription(userId);
+      }
+
+      // Also fetch usage data
+      await this.fetchFreeTierUsage(userId);
+
+    } catch (error) {
+      this.logger.error("Failed to fetch user subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
       
-      if (stripeSubscriptionId) {
-        const subscriptionRef = doc(db, 'subscriptions', userId);
-        await updateDoc(subscriptionRef, {
-          stripeSubscriptionId,
-          status: 'active',
+      // Set default subscription as fallback
+      this.userSubscription = {
+        subscriptionTier: SubscriptionTier.FREE,
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        subscriptionStartDate: Date.now(),
+      };
+    }
+  }
+
+  /**
+   * Fetch free tier usage data from Firestore
+   */
+  private async fetchFreeTierUsage(userId: string): Promise<void> {
+    try {
+      const docRef = doc(db, 'freeTierUsage', userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        this.freeTierUsage = {
+          freeSessionCount: data.freeSessionCount || 0,
+          freeSessionDurationAccumulated: data.freeSessionDurationAccumulated || 0,
+          savedScriptsCount: data.savedScriptsCount || 0,
+          lastUpdated: data.lastUpdated?.toMillis() || Date.now(),
+        };
+      } else {
+        // No usage document found, create default
+        await this.createDefaultFreeTierUsage(userId);
+      }
+    } catch (error) {
+      this.logger.error("Failed to fetch free tier usage", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      
+      // Set default usage as fallback
+      this.freeTierUsage = {
+        freeSessionCount: 0,
+        freeSessionDurationAccumulated: 0,
+        savedScriptsCount: 0,
+        lastUpdated: Date.now(),
+      };
+    }
+  }
+
+  /**
+   * Create default free subscription for new users
+   */
+  private async createDefaultSubscription(userId: string): Promise<void> {
+    try {
+      const defaultSubscription: UserSubscription = {
+        subscriptionTier: SubscriptionTier.FREE,
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        subscriptionStartDate: Date.now(),
+      };
+
+      await setDoc(doc(db, 'subscriptions', userId), {
+        ...defaultSubscription,
+        subscriptionStartDate: serverTimestamp(),
+      });
+
+      this.userSubscription = defaultSubscription;
+    } catch (error) {
+      this.logger.error("Failed to create default subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+    }
+  }
+
+  /**
+   * Create default free tier usage tracking
+   */
+  private async createDefaultFreeTierUsage(userId: string): Promise<void> {
+    try {
+      const defaultUsage: FreeTierUsage = {
+        freeSessionCount: 0,
+        freeSessionDurationAccumulated: 0,
+        savedScriptsCount: 0,
+        lastUpdated: Date.now(),
+      };
+
+      await setDoc(doc(db, 'freeTierUsage', userId), {
+        ...defaultUsage,
+        lastUpdated: serverTimestamp(),
+      });
+
+      this.freeTierUsage = defaultUsage;
+    } catch (error) {
+      this.logger.error("Failed to create default free tier usage", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+    }
+  }
+
+  /**
+   * Get the current subscription context with features and usage information
+   */
+  public getSubscriptionContext(): SubscriptionContext {
+    if (!this.userSubscription) {
+      // Return default free context if no subscription loaded
+      return this.getDefaultSubscriptionContext();
+    }
+
+    const { subscriptionTier } = this.userSubscription;
+    const features = TierFeatureMapping[subscriptionTier];
+    
+    // Check if user is in free trial
+    const isFreeTrial = Boolean(
+      this.userSubscription.freeTrialEndDate && 
+      Date.now() < this.userSubscription.freeTrialEndDate
+    );
+
+    // Calculate days left in trial
+    const daysLeftInTrial = this.userSubscription.freeTrialEndDate 
+      ? Math.max(0, Math.ceil((this.userSubscription.freeTrialEndDate - Date.now()) / (1000 * 60 * 60 * 24)))
+      : undefined;
+
+    return {
+      subscription: this.userSubscription,
+      freeTierUsage: this.freeTierUsage || undefined,
+      features,
+      isFeatureAvailable: (feature) => this.isFeatureAvailable(feature),
+      isFreeTrial,
+      daysLeftInTrial,
+      hasReachedFreeLimit: (limitType) => this.hasReachedFreeLimit(limitType),
+      upgradeNeeded: (feature) => this.getUpgradeForFeature(feature),
+    };
+  }
+
+  /**
+   * Fallback free subscription context when data isn't loaded
+   */
+  private getDefaultSubscriptionContext(): SubscriptionContext {
+    const defaultSubscription: UserSubscription = {
+      subscriptionTier: SubscriptionTier.FREE,
+      subscriptionStatus: SubscriptionStatus.ACTIVE,
+      subscriptionStartDate: Date.now(),
+    };
+
+    const features = TierFeatureMapping[SubscriptionTier.FREE];
+
+    return {
+      subscription: defaultSubscription,
+      features,
+      isFeatureAvailable: (feature) => TierFeatureMapping[SubscriptionTier.FREE][feature],
+      isFreeTrial: false,
+      hasReachedFreeLimit: () => false,
+      upgradeNeeded: (feature) => this.getUpgradeForFeature(feature),
+    };
+  }
+
+  /**
+   * Check if a specific feature is available for the current subscription
+   */
+  public isFeatureAvailable(feature: keyof FeatureFlags): boolean {
+    if (!this.userSubscription) {
+      return false;
+    }
+
+    return TierFeatureMapping[this.userSubscription.subscriptionTier][feature];
+  }
+
+  /**
+   * Check if user has reached a free tier limit
+   */
+  public hasReachedFreeLimit(limitType: 'scripts' | 'sessions' | 'time'): boolean {
+    // If not free tier, no limits apply
+    if (this.userSubscription?.subscriptionTier !== SubscriptionTier.FREE) {
+      return false;
+    }
+
+    if (!this.freeTierUsage) {
+      return false; // Can't determine without usage data
+    }
+
+    switch (limitType) {
+      case 'scripts':
+        return this.freeTierUsage.savedScriptsCount >= FREE_TIER_LIMITS.MAX_SCRIPTS;
+      case 'sessions':
+        return this.freeTierUsage.freeSessionCount >= FREE_TIER_LIMITS.MAX_SESSION_COUNT;
+      case 'time':
+        return this.freeTierUsage.freeSessionDurationAccumulated >= FREE_TIER_LIMITS.MAX_SESSION_DURATION;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Get the subscription tier needed to unlock a feature
+   */
+  public getUpgradeForFeature(feature: keyof FeatureFlags): SubscriptionTier | null {
+    // If feature is already available, no upgrade needed
+    if (this.isFeatureAvailable(feature)) {
+      return null;
+    }
+
+    // Check which tier has this feature
+    if (TierFeatureMapping[SubscriptionTier.PRO][feature]) {
+      return SubscriptionTier.PRO;
+    } else if (TierFeatureMapping[SubscriptionTier.STUDIO][feature]) {
+      return SubscriptionTier.STUDIO;
+    }
+
+    return null; // Feature not available in any tier
+  }
+
+  /**
+   * Track script creation for free tier limits
+   */
+  public async trackScriptCreation(userId: string): Promise<boolean> {
+    if (!userId) {
+      return false;
+    }
+
+    try {
+      // Use transaction to ensure atomic update
+      await runTransaction(db, async (transaction) => {
+        const usageDocRef = doc(db, 'freeTierUsage', userId);
+        const usageDoc = await transaction.get(usageDocRef);
+        
+        if (!usageDoc.exists()) {
+          // Create default usage document if it doesn't exist
+          transaction.set(usageDocRef, {
+            freeSessionCount: 0,
+            freeSessionDurationAccumulated: 0,
+            savedScriptsCount: 1, // Start with this script
+            lastUpdated: serverTimestamp(),
+          });
+        } else {
+          // Increment script count
+          transaction.update(usageDocRef, {
+            savedScriptsCount: increment(1),
+            lastUpdated: serverTimestamp(),
+          });
+        }
+      });
+      
+      // Refresh usage data
+      if (auth.currentUser) {
+        await this.fetchFreeTierUsage(auth.currentUser.uid);
+      }
+      
+      return true;
+    } catch (error) {
+      this.logger.error("Failed to track script creation", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Track session usage for free tier limits
+   */
+  public async trackSessionStart(userId: string): Promise<boolean> {
+    if (!userId) {
+      return false;
+    }
+
+    try {
+      // Use transaction to ensure atomic update
+      await runTransaction(db, async (transaction) => {
+        const usageDocRef = doc(db, 'freeTierUsage', userId);
+        const usageDoc = await transaction.get(usageDocRef);
+        
+        if (!usageDoc.exists()) {
+          // Create default usage document if it doesn't exist
+          transaction.set(usageDocRef, {
+            freeSessionCount: 1, // Start with this session
+            freeSessionDurationAccumulated: 0,
+            savedScriptsCount: 0,
+            lastUpdated: serverTimestamp(),
+          });
+        } else {
+          // Increment session count
+          transaction.update(usageDocRef, {
+            freeSessionCount: increment(1),
+            lastUpdated: serverTimestamp(),
+          });
+        }
+      });
+      
+      // Refresh usage data
+      if (auth.currentUser) {
+        await this.fetchFreeTierUsage(auth.currentUser.uid);
+      }
+      
+      return true;
+    } catch (error) {
+      this.logger.error("Failed to track session start", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Track session duration for free tier limits
+   */
+  public async trackSessionDuration(userId: string, durationInSeconds: number): Promise<boolean> {
+    if (!userId) {
+      return false;
+    }
+
+    try {
+      // Use transaction to ensure atomic update
+      await runTransaction(db, async (transaction) => {
+        const usageDocRef = doc(db, 'freeTierUsage', userId);
+        const usageDoc = await transaction.get(usageDocRef);
+        
+        if (!usageDoc.exists()) {
+          // Create default usage document if it doesn't exist
+          transaction.set(usageDocRef, {
+            freeSessionCount: 1,
+            freeSessionDurationAccumulated: durationInSeconds,
+            savedScriptsCount: 0,
+            lastUpdated: serverTimestamp(),
+          });
+        } else {
+          // Add duration
+          transaction.update(usageDocRef, {
+            freeSessionDurationAccumulated: increment(durationInSeconds),
+            lastUpdated: serverTimestamp(),
+          });
+        }
+      });
+      
+      // Refresh usage data
+      if (auth.currentUser) {
+        await this.fetchFreeTierUsage(auth.currentUser.uid);
+      }
+      
+      return true;
+    } catch (error) {
+      this.logger.error("Failed to track session duration", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Reset free tier usage limits when upgrading to paid plan
+   */
+  public async resetUsageLimits(userId: string): Promise<boolean> {
+    if (!userId) {
+      return false;
+    }
+
+    try {
+      // Keep script count but reset session counts
+      await updateDoc(doc(db, 'freeTierUsage', userId), {
+        freeSessionCount: 0,
+        freeSessionDurationAccumulated: 0,
+        lastUpdated: serverTimestamp(),
+      });
+      
+      // Refresh usage data
+      if (auth.currentUser) {
+        await this.fetchFreeTierUsage(auth.currentUser.uid);
+      }
+      
+      return true;
+    } catch (error) {
+      this.logger.error("Failed to reset usage limits", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Get appropriate CTA message for a specific scenario
+   */
+  public getCtaMessage(ctaType: CtaType): CtaMessage {
+    switch (ctaType) {
+      case CtaType.SESSION_LIMIT:
+        return {
+          title: "Session Limit Reached",
+          description: "You've reached the free limit of sessions. Upgrade to Pro for unlimited sessions.",
+          buttonText: "Upgrade to Pro",
+          targetTier: SubscriptionTier.PRO,
+          image: "session_limit.png"
+        };
+      case CtaType.SCRIPT_LIMIT:
+        return {
+          title: "Script Limit Reached",
+          description: "You've reached the free limit of saved scripts. Upgrade to Pro for unlimited scripts.",
+          buttonText: "Upgrade to Pro",
+          targetTier: SubscriptionTier.PRO,
+          image: "script_limit.png"
+        };
+      case CtaType.TIME_LIMIT:
+        return {
+          title: "Time Limit Reached",
+          description: "You've reached the free time limit. Upgrade to Pro for unlimited teleprompter time.",
+          buttonText: "Upgrade to Pro",
+          targetTier: SubscriptionTier.PRO,
+          image: "time_limit.png"
+        };
+      case CtaType.FEATURE_LOCKED:
+        return {
+          title: "Feature Not Available",
+          description: "This feature is only available on Pro and Studio plans.",
+          buttonText: "See Plans",
+          targetTier: SubscriptionTier.PRO,
+          image: "feature_locked.png"
+        };
+      case CtaType.TRIAL_ENDING:
+        return {
+          title: "Trial Ending Soon",
+          description: "Your free trial is ending soon. Upgrade now to keep all Pro features.",
+          buttonText: "Upgrade Now",
+          targetTier: SubscriptionTier.PRO,
+          image: "trial_ending.png"
+        };
+      case CtaType.GENERAL_UPGRADE:
+      default:
+        return {
+          title: "Upgrade Your Experience",
+          description: "Unlock all premium features by upgrading to a Pro subscription.",
+          buttonText: "See Plans",
+          targetTier: SubscriptionTier.PRO,
+          image: "upgrade.png"
+        };
+    }
+  }
+
+  /**
+   * Handle purchase through RevenueCat
+   */
+  public async purchase(productId: string): Promise<boolean> {
+    try {
+      const isConnected = await this.checkInternetConnection();
+      if (!isConnected) {
+        throw new Error("No internet connection available");
+      }
+
+      if (!auth.currentUser?.uid) {
+        throw new Error("User not authenticated");
+      }
+
+      const customerInfo = await this.revenueCatService.purchaseProduct(productId);
+      
+      // Determine which tier was purchased
+      let newTier: SubscriptionTier;
+      if (productId.includes('studio')) {
+        newTier = SubscriptionTier.STUDIO;
+      } else if (productId.includes('pro')) {
+        newTier = SubscriptionTier.PRO;
+      } else {
+        newTier = SubscriptionTier.FREE;
+      }
+
+      // Update subscription in Firestore
+      await this.updateSubscription(auth.currentUser.uid, {
+        subscriptionTier: newTier,
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        lastPaymentDate: Date.now(),
+        revenueCatUserId: auth.currentUser.uid,
+        receiptData: {
+          platform: Platform.OS === 'ios' ? 'ios' : 'android',
+          transactionId: customerInfo.originalPurchaseDate || Date.now().toString(),
+          purchaseDate: Date.now(),
+          receipt: 'stored_in_revenuecat',
+        }
+      });
+
+      // Reset usage limits
+      await this.resetUsageLimits(auth.currentUser.uid);
+
+      return true;
+    } catch (error) {
+      this.logger.error("Purchase failed", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Update subscription data
+   */
+  private async updateSubscription(userId: string, updates: Partial<UserSubscription>): Promise<void> {
+    try {
+      const docRef = doc(db, 'subscriptions', userId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        await updateDoc(docRef, {
+          ...updates,
           updatedAt: serverTimestamp(),
+        });
+      } else {
+        // Create new subscription if it doesn't exist
+        const newSubscription: UserSubscription = {
+          subscriptionTier: SubscriptionTier.FREE,
+          subscriptionStatus: SubscriptionStatus.ACTIVE,
+          subscriptionStartDate: Date.now(),
+          ...updates,
+        };
+
+        await setDoc(docRef, {
+          ...newSubscription,
+          updatedAt: serverTimestamp(),
+          subscriptionStartDate: serverTimestamp(),
         });
       }
     } catch (error) {
-      console.error('Error handling payment success:', error);
-      throw new Error('Failed to handle payment success');
-    }
-  }
-
-  async handlePaymentFailure(userId: string, reason: string): Promise<void> {
-    try {
-      const subscriptionRef = doc(db, 'subscriptions', userId);
-      await updateDoc(subscriptionRef, {
-        status: 'past_due',
-        updatedAt: serverTimestamp(),
+      this.logger.error("Failed to update subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
       });
+    }
+  }
+
+  /**
+   * Restore previous purchases through RevenueCat
+   */
+  public async restorePurchases(): Promise<boolean> {
+    try {
+      const isConnected = await this.checkInternetConnection();
+      if (!isConnected) {
+        throw new Error("No internet connection available");
+      }
+
+      if (!auth.currentUser?.uid) {
+        throw new Error("User not authenticated");
+      }
+
+      // Restore purchases through RevenueCat
+      const customerInfo = await this.revenueCatService.restorePurchases();
+      
+      // Check for active subscriptions
+      const activeSubscriptions = customerInfo.activeSubscriptions;
+      
+      // Determine which tier to assign
+      let restoredTier = SubscriptionTier.FREE;
+      
+      if (activeSubscriptions.some(sub => sub.includes('studio'))) {
+        restoredTier = SubscriptionTier.STUDIO;
+      } else if (activeSubscriptions.some(sub => sub.includes('pro'))) {
+        restoredTier = SubscriptionTier.PRO;
+      }
+
+      // Only update if we found an active subscription
+      if (restoredTier === SubscriptionTier.PRO || restoredTier === SubscriptionTier.STUDIO) {
+        // Update subscription in Firestore
+        await this.updateSubscription(auth.currentUser.uid, {
+          subscriptionTier: restoredTier,
+          subscriptionStatus: SubscriptionStatus.ACTIVE,
+          revenueCatUserId: auth.currentUser.uid
+        });
+
+        // Reset usage limits for paid plans
+        await this.resetUsageLimits(auth.currentUser.uid);
+        
+        return true;
+      }
+      
+      return false;
     } catch (error) {
-      console.error('Error handling payment failure:', error);
+      this.logger.error("Restore purchases failed", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
+      });
+      return false;
     }
   }
 
-  // Utility methods
-  getTierDisplayName(tier: SubscriptionTier): string {
-    switch (tier) {
-      case 'free': return 'Free';
-      case 'personal': return 'Personal';
-      case 'business': return 'Business';
-      case 'enterprise': return 'Enterprise';
-      default: return 'Unknown';
-    }
-  }
-
-  getTierColor(tier: SubscriptionTier): string {
-    switch (tier) {
-      case 'free': return '#6B7280';
-      case 'personal': return '#3B82F6';
-      case 'business': return '#10B981';
-      case 'enterprise': return '#8B5CF6';
-      default: return '#6B7280';
-    }
-  }
-
-  getFeaturesList(tier: SubscriptionTier): string[] {
-    const features = this.FEATURE_LIMITS[tier];
-    const list: string[] = [];
-
-    if (features.maxScripts === -1) {
-      list.push('Unlimited scripts');
-    } else {
-      list.push(`${features.maxScripts} scripts`);
-    }
-
-    if (features.maxTeams === -1) {
-      list.push('Unlimited teams');
-    } else {
-      list.push(`${features.maxTeams} teams`);
-    }
-
-    list.push(`${features.maxTeamMembers} team members`);
-    list.push(`${features.maxStorageGB}GB storage`);
-
-    if (features.cloudSync) list.push('Cloud sync');
-    if (features.teamCollaboration) list.push('Team collaboration');
-    if (features.advancedAnalytics) list.push('Advanced analytics');
-    if (features.prioritySupport) list.push('Priority support');
-    if (features.customBranding) list.push('Custom branding');
-    if (features.apiAccess) list.push('API access');
-
-    return list;
+  /**
+   * Check if we have an internet connection
+   */
+  private async checkInternetConnection(): Promise<boolean> {
+    const state = await NetInfo.fetch();
+    return state.isConnected === true;
   }
 }
 
-export const subscriptionService = new SubscriptionService();
-export default subscriptionService;
+export default SubscriptionService;
+export const subscriptionService = SubscriptionService.getInstance();

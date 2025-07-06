@@ -25,8 +25,37 @@ import {
 import Slider from '@react-native-community/slider';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { useScriptStore } from '../store/scriptStore';
-import { SpeechRecognitionPanel, KaraokeText, KaraokeSettings, AdaptiveScrollSettings as AdaptiveScrollSettingsModal, PacingMeter, SessionSummary, FillerWordCue, PacingSettings } from '../components';
-import { speechRecognitionService, karaokeService, pacingMeterService, fillerWordDetectionService } from '../services';
+import { 
+  SpeechRecognitionPanel, 
+  KaraokeText, 
+  KaraokeSettings, 
+  AdaptiveScrollSettings as AdaptiveScrollSettingsModal, 
+  PacingMeter, 
+  SessionSummary, 
+  FillerWordCue, 
+  PacingSettings,
+  VideoRecordingPanel,
+  ExternalDisplayPanel,
+  BLERemotePanel,
+  LanguageSelector,
+  GamificationPanel
+} from '../components';
+import { 
+  speechRecognitionService, 
+  karaokeService, 
+  pacingMeterService, 
+  fillerWordDetectionService,
+  multiLanguageService,
+  gamificationService 
+} from '../services';
+import HumeEmotionService from '../services/humeEmotionService';
+import GeminiAiService from '../services/geminiAiService';
+import EmotionIndicator from '../components/EmotionIndicator';
+import AiSuggestionPanel from '../components/AiSuggestionPanel';
+import { PerformanceOptimizer } from '../services/performanceOptimizer';
+
+// Initialize performance optimizer
+const performanceOptimizer = PerformanceOptimizer.getInstance();
 
 // Import the adaptive scroll service - create temporary instance for now
 const adaptiveScrollService = {
@@ -71,8 +100,20 @@ import {
   FillerWordSettings,
   FillerWordState,
   FillerWordDetection,
-  SessionSummaryReport
+  SessionSummaryReport,
+  LanguageOption
 } from '../types';
+import { 
+  EmotionAnalysis, 
+  EmotionIndicatorState, 
+  EmotionSessionData 
+} from '../services/humeEmotionService';
+import { 
+  AiSuggestion, 
+  AiPromptingSettings, 
+  AiSessionData, 
+  ScriptContext 
+} from '../services/geminiAiService';
 
 type TeleprompterScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -253,6 +294,55 @@ export default function TeleprompterScreen() {
   const [sessionReport, setSessionReport] = useState<SessionSummaryReport | null>(null);
   const [showSessionSummary, setShowSessionSummary] = useState(false);
   
+  // Video recording state
+  const [showVideoRecording, setShowVideoRecording] = useState(false);
+  const [isVideoRecording, setIsVideoRecording] = useState(false);
+  const [sessionId, setSessionId] = useState(() => `session_${Date.now()}`);
+  
+  // External display state
+  const [showExternalDisplay, setShowExternalDisplay] = useState(false);
+  
+  // BLE remote control state
+  const [showBLERemote, setShowBLERemote] = useState(false);
+  
+  // Hume emotion analysis state
+  const [currentEmotion, setCurrentEmotion] = useState<EmotionAnalysis | null>(null);
+  const [emotionIndicator, setEmotionIndicator] = useState<EmotionIndicatorState>({
+    emoji: '😐',
+    color: '#9CA3AF',
+    confidence: 0,
+    description: 'Neutral',
+  });
+  const [showEmotionIndicator, setShowEmotionIndicator] = useState(true);
+  const [emotionSessionData, setEmotionSessionData] = useState<EmotionSessionData | null>(null);
+  
+  // Gemini AI suggestion state
+  const [aiSuggestion, setAiSuggestion] = useState<AiSuggestion | null>(null);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
+  const [aiPromptingSettings, setAiPromptingSettings] = useState<AiPromptingSettings>({
+    enabled: true,
+    pauseThreshold: 3,
+    deviationThreshold: 0.7,
+    suggestionDisplay: 'subtle',
+    autoTrigger: true,
+    businessTierOnly: true,
+  });
+  const [aiSessionData, setAiSessionData] = useState<AiSessionData | null>(null);
+  const [lastTranscriptTime, setLastTranscriptTime] = useState<number>(Date.now());
+  
+  // Multi-language state
+  const [selectedLanguage, setSelectedLanguage] = useState(script?.language?.code || 'en');
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  
+  // Gamification state
+  const [showGamificationPanel, setShowGamificationPanel] = useState(false);
+  const [sessionXP, setSessionXP] = useState(0);
+  const [sessionAchievements, setSessionAchievements] = useState<string[]>([]);
+  
+  // Service instances
+  const humeService = useRef(HumeEmotionService.getInstance());
+  const geminiService = useRef(GeminiAiService.getInstance());
+  
   const scrollViewRef = useRef<ScrollView>(null);
   const scrollPositionRef = useRef(0);
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -269,7 +359,15 @@ export default function TeleprompterScreen() {
       return;
     }
     
+    // Initialize performance monitoring for teleprompter session
+    performanceOptimizer.initMemoryMonitoring();
+    
     setState(prev => ({ ...prev, totalParagraphs: paragraphs.length }));
+
+    // Cleanup performance monitoring on unmount
+    return () => {
+      performanceOptimizer.cleanup();
+    };
   }, [script, navigation, paragraphs.length]);
 
   useEffect(() => {
@@ -342,6 +440,24 @@ export default function TeleprompterScreen() {
 
     return unsubscribeWordListener;
   }, [karaokeSettings.enabled, karaokeState.isActive]);
+
+  // Multi-language integration effect
+  useEffect(() => {
+    if (selectedLanguage && script?.language?.code !== selectedLanguage) {
+      // Get the language option for the selected language
+      const multiLangService = multiLanguageService.getInstance();
+      const languageOption = multiLangService.getLanguageByCode(selectedLanguage);
+      if (languageOption) {
+        // Get the Deepgram model for this language
+        const deepgramModel = multiLangService.getDeepgramModel(languageOption);
+        console.log('Switching to Deepgram model:', deepgramModel, 'for language:', selectedLanguage);
+        
+        // Note: Speech recognition service would need to be updated to support language switching
+        // For now, we'll log the language change
+        console.log('Language changed from', script?.language?.code || 'en', 'to', selectedLanguage);
+      }
+    }
+  }, [selectedLanguage, script?.language?.code]);
 
   // Initialize adaptive scrolling service
   useEffect(() => {
@@ -484,6 +600,137 @@ export default function TeleprompterScreen() {
 
     return unsubscribeWordListener;
   }, [fillerWordSettings.enabled, scriptAnalysis, fillerWordState.sessionStartTime]);
+
+  // Initialize Hume emotion analysis service
+  useEffect(() => {
+    const initializeHumeService = async () => {
+      try {
+        const apiKey = HumeEmotionService.getApiKey();
+        if (!apiKey) {
+          console.warn('[Hume] API key not found');
+          return;
+        }
+        
+        await humeService.current.initialize(apiKey);
+        
+        // Set up emotion listeners
+        humeService.current.addEmotionListener((emotion: EmotionAnalysis) => {
+          setCurrentEmotion(emotion);
+        });
+        
+        humeService.current.addIndicatorListener((indicator: EmotionIndicatorState) => {
+          setEmotionIndicator(indicator);
+        });
+        
+        console.log('[Hume] Emotion analysis service initialized');
+      } catch (error) {
+        console.error('[Hume] Failed to initialize service:', error);
+      }
+    };
+    
+    initializeHumeService();
+    
+    return () => {
+      // Cleanup listeners on unmount
+      humeService.current.removeEmotionListener(setCurrentEmotion);
+      humeService.current.removeIndicatorListener(setEmotionIndicator);
+    };
+  }, []);
+
+  // Initialize Gemini AI service
+  useEffect(() => {
+    const initializeGeminiService = async () => {
+      try {
+        const apiKey = GeminiAiService.getApiKey();
+        if (!apiKey) {
+          console.warn('[Gemini] API key not found');
+          return;
+        }
+        
+        await geminiService.current.initialize(apiKey);
+        
+        // Update settings
+        geminiService.current.updateSettings(aiPromptingSettings);
+        
+        // Set up suggestion listener
+        geminiService.current.addSuggestionListener((suggestion: AiSuggestion) => {
+          setAiSuggestion(suggestion);
+        });
+        
+        console.log('[Gemini] AI prompting service initialized');
+      } catch (error) {
+        console.error('[Gemini] Failed to initialize service:', error);
+      }
+    };
+    
+    if (aiPromptingSettings.enabled) {
+      initializeGeminiService();
+    }
+    
+    return () => {
+      // Cleanup listeners on unmount
+      geminiService.current.removeSuggestionListener(setAiSuggestion);
+    };
+  }, [aiPromptingSettings.enabled]);
+
+  // Monitor transcript for AI suggestions
+  useEffect(() => {
+    if (!aiPromptingSettings.enabled || !script?.content) return;
+    
+    const checkForAiTriggers = () => {
+      const now = Date.now();
+      const timeSinceLastTranscript = now - lastTranscriptTime;
+      
+      // Trigger AI suggestion if user pauses for extended period
+      if (timeSinceLastTranscript > aiPromptingSettings.pauseThreshold * 1000) {
+        const context: ScriptContext = {
+          fullScript: script.content,
+          currentPosition: state.currentParagraph,
+          recentTranscript: practiceTranscript,
+          pauseDuration: timeSinceLastTranscript,
+          isDeviation: false, // TODO: Implement deviation detection
+          userRequestedHelp: false,
+        };
+        
+        geminiService.current.generateSuggestion(context);
+      }
+    };
+    
+    const intervalId = setInterval(checkForAiTriggers, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [aiPromptingSettings, script?.content, lastTranscriptTime, practiceTranscript, state.currentParagraph]);
+
+  // Set up speech recognition for transcript monitoring
+  useEffect(() => {
+    if (!aiPromptingSettings.enabled) return;
+
+    // Use the existing speech recognition subscription to monitor transcript changes
+    const unsubscribeStateListener = speechRecognitionService.subscribe(
+      (state) => {
+        if (state.transcript && state.transcript !== practiceTranscript) {
+          setLastTranscriptTime(Date.now());
+          // TODO: Implement deviation detection by comparing transcript to script
+          // This would involve text similarity analysis
+        }
+      }
+    );
+
+    return unsubscribeStateListener;
+  }, [aiPromptingSettings.enabled, practiceTranscript]);
+
+  // Set up audio recording for Hume emotion analysis
+  useEffect(() => {
+    if (!showEmotionIndicator) return;
+    
+    // TODO: Implement audio recording and chunking
+    // This would involve using expo-audio or react-native-audio-recorder-player
+    // to capture audio and send chunks to Hume service
+    
+    return () => {
+      // Cleanup audio recording
+    };
+  }, [showEmotionIndicator]);
 
   const resetControlsTimeout = useCallback(() => {
     if (controlsTimeoutRef.current) {
@@ -674,6 +921,20 @@ export default function TeleprompterScreen() {
       };
       
       setSessionReport(completeReport);
+      
+      // Update gamification data with session results
+      const gamificationSvc = gamificationService.getInstance();
+      gamificationSvc.updateProgressFromSession(completeReport).then(() => {
+        // Get XP and achievements earned this session
+        gamificationSvc.getGamificationData().then(data => {
+          setSessionXP(data.weeklyXP); // This would be the XP earned this session
+          // Check for new achievements (simplified)
+          setSessionAchievements(data.recentAchievements.map(a => a.id));
+        });
+      }).catch(error => {
+        console.error('Error updating gamification data:', error);
+      });
+      
       if (pacingMeterSettings.showSessionSummary) {
         setShowSessionSummary(true);
       }
@@ -721,16 +982,50 @@ export default function TeleprompterScreen() {
   const startAnalysisSession = () => {
     startPacingSession();
     startFillerDetectionSession();
+    
+    // Start Hume emotion analysis session
+    if (showEmotionIndicator) {
+      humeService.current.startEmotionSession(sessionId);
+    }
+    
+    // Start Gemini AI session
+    if (aiPromptingSettings.enabled) {
+      geminiService.current.startAiSession(sessionId);
+    }
   };
 
   const stopAnalysisSession = () => {
     stopPacingSession();
     stopFillerDetectionSession();
+    
+    // End Hume emotion analysis session
+    const emotionData = humeService.current.endEmotionSession();
+    if (emotionData) {
+      setEmotionSessionData(emotionData);
+    }
+    
+    // End Gemini AI session
+    const aiData = geminiService.current.endAiSession();
+    if (aiData) {
+      setAiSessionData(aiData);
+    }
   };
 
   const resetAnalysisSession = () => {
     resetPacingSession();
     resetFillerDetectionSession();
+    
+    // Reset emotion and AI states
+    setCurrentEmotion(null);
+    setEmotionIndicator({
+      emoji: '😐',
+      color: '#9CA3AF',
+      confidence: 0,
+      description: 'Neutral',
+    });
+    setAiSuggestion(null);
+    setEmotionSessionData(null);
+    setAiSessionData(null);
   };
 
   // Settings handlers
@@ -758,6 +1053,65 @@ export default function TeleprompterScreen() {
   const handleSpeechStop = () => {
     stopKaraokeSession();
     stopAnalysisSession();
+  };
+
+  // Video recording handlers
+  const handleVideoRecordingStateChange = (isRecording: boolean) => {
+    setIsVideoRecording(isRecording);
+  };
+
+  const handleVideoRecorded = (videoUri: string) => {
+    console.log('Video recorded:', videoUri);
+    // Handle video export, saving, etc.
+  };
+
+  const handleScrollSync = (timestamp: number, scrollPosition: number) => {
+    // Synchronize scroll position with video timestamp for analytics
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: scrollPosition, animated: false });
+    }
+  };
+
+  // External display handlers
+  const handleExternalDisplayToggle = () => {
+    setShowExternalDisplay(!showExternalDisplay);
+  };
+
+  // BLE remote control handlers
+  const handleBLERemoteToggle = () => {
+    setShowBLERemote(!showBLERemote);
+  };
+
+  const handleRemoteCommand = (command: string) => {
+    switch (command) {
+      case 'PLAY_PAUSE':
+        handleScrollToggle();
+        break;
+      case 'SCROLL_UP':
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ 
+            y: Math.max(0, scrollPositionRef.current - 100), 
+            animated: true 
+          });
+        }
+        break;
+      case 'SCROLL_DOWN':
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ 
+            y: scrollPositionRef.current + 100, 
+            animated: true 
+          });
+        }
+        break;
+      case 'SPEED_UP':
+        handleSettingChange('speed', Math.min(100, settings.speed + 5));
+        break;
+      case 'SPEED_DOWN':
+        handleSettingChange('speed', Math.max(10, settings.speed - 5));
+        break;
+      default:
+        console.log('Unknown remote command:', command);
+    }
   };
 
   const renderFormattedText = (text: string, paragraphIndex: number) => {
@@ -1041,12 +1395,75 @@ export default function TeleprompterScreen() {
             />
 
             <IconButton
+              icon="emoticon-happy"
+              size={24}
+              mode="contained"
+              onPress={() => setShowEmotionIndicator(!showEmotionIndicator)}
+              iconColor="#ffffff"
+              containerColor={showEmotionIndicator ? "#10B981" : "#6B7280"}
+            />
+
+            <IconButton
+              icon="brain"
+              size={24}
+              mode="contained"
+              onPress={() => setShowAiSuggestions(!showAiSuggestions)}
+              iconColor="#ffffff"
+              containerColor={showAiSuggestions ? "#10B981" : "#6B7280"}
+            />
+
+            <IconButton
+              icon="video"
+              size={24}
+              mode="contained"
+              onPress={() => setShowVideoRecording(!showVideoRecording)}
+              iconColor="#ffffff"
+              containerColor={isVideoRecording ? "#EF4444" : showVideoRecording ? "#10B981" : "#6B7280"}
+            />
+
+            <IconButton
+              icon="monitor"
+              size={24}
+              mode="contained"
+              onPress={handleExternalDisplayToggle}
+              iconColor="#ffffff"
+              containerColor={showExternalDisplay ? "#10B981" : "#6B7280"}
+            />
+
+            <IconButton
+              icon="bluetooth"
+              size={24}
+              mode="contained"
+              onPress={handleBLERemoteToggle}
+              iconColor="#ffffff"
+              containerColor={showBLERemote ? "#10B981" : "#6B7280"}
+            />
+
+            <IconButton
               icon={isFullscreen ? 'fullscreen-exit' : 'fullscreen'}
               size={24}
               mode="contained"
               onPress={toggleFullscreen}
               iconColor="#ffffff"
               containerColor="#374151"
+            />
+
+            <IconButton
+              icon="translate"
+              size={24}
+              mode="contained"
+              onPress={() => setShowLanguageSelector(true)}
+              iconColor="#ffffff"
+              containerColor="#8B5CF6"
+            />
+
+            <IconButton
+              icon="trophy"
+              size={24}
+              mode="contained"
+              onPress={() => setShowGamificationPanel(true)}
+              iconColor="#ffffff"
+              containerColor="#F59E0B"
             />
           </View>
 
@@ -1460,6 +1877,33 @@ export default function TeleprompterScreen() {
             }}
           />
         )}
+
+        {/* Language Selection Modal */}
+        <Modal
+          visible={showLanguageSelector}
+          onDismiss={() => setShowLanguageSelector(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <LanguageSelector
+            selectedLanguage={script?.language || null}
+            onLanguageSelect={(language: LanguageOption) => {
+              setSelectedLanguage(language.code);
+              setShowLanguageSelector(false);
+            }}
+            showFlags={true}
+            title="Select Script Language"
+          />
+        </Modal>
+
+        {/* Gamification Panel Modal */}
+        <GamificationPanel
+          visible={showGamificationPanel}
+          onDismiss={() => setShowGamificationPanel(false)}
+          onShare={(shareData) => {
+            // Handle social sharing
+            console.log('Sharing achievement:', shareData);
+          }}
+        />
       </Portal>
 
       {/* Speech Recognition Panel */}
@@ -1482,6 +1926,46 @@ export default function TeleprompterScreen() {
         onToggleVisibility={() => setShowPacingMeter(!showPacingMeter)}
       />
 
+      {/* Emotion Indicator */}
+      {showEmotionIndicator && (
+        <EmotionIndicator
+          visible={showEmotionIndicator}
+          position="top-right"
+          onEmotionChange={(emotion) => {
+            setCurrentEmotion(emotion);
+          }}
+          style={{
+            position: 'absolute',
+            top: 60,
+            right: 20,
+            zIndex: 1000,
+          }}
+        />
+      )}
+
+      {/* AI Suggestion Panel */}
+      {showAiSuggestions && (
+        <AiSuggestionPanel
+          visible={showAiSuggestions}
+          position="bottom"
+          onSuggestionAccept={(suggestion) => {
+            console.log('User accepted AI suggestion:', suggestion.text);
+            // TODO: Update user acceptance metrics in Gemini service
+          }}
+          onSuggestionReject={(suggestion) => {
+            console.log('User rejected AI suggestion:', suggestion.text);
+            // TODO: Update user rejection metrics in Gemini service
+          }}
+          style={{
+            position: 'absolute',
+            bottom: 120,
+            left: 20,
+            right: 20,
+            zIndex: 1000,
+          }}
+        />
+      )}
+
       {/* Filler Word Cues */}
       {activeFillerCues.map((detection, index) => (
         <FillerWordCue
@@ -1499,6 +1983,40 @@ export default function TeleprompterScreen() {
           }}
         />
       ))}
+
+      {/* Video Recording Panel */}
+      {showVideoRecording && (
+        <VideoRecordingPanel
+          sessionId={sessionId}
+          isActive={showVideoRecording}
+          onRecordingStateChange={handleVideoRecordingStateChange}
+          onVideoRecorded={handleVideoRecorded}
+          onScrollSync={handleScrollSync}
+        />
+      )}
+
+      {/* External Display Panel */}
+      {showExternalDisplay && (
+        <ExternalDisplayPanel
+          scriptContent={script?.content || ''}
+          currentPosition={scrollPositionRef.current}
+          highlightedWords={karaokeState.highlightedWords}
+          isActive={showExternalDisplay}
+          onDisplayOptionsChange={(options) => {
+            console.log('Display options changed:', options);
+          }}
+        />
+      )}
+
+      {/* BLE Remote Control Panel */}
+      {showBLERemote && (
+        <BLERemotePanel
+          isActive={showBLERemote}
+          onRemoteAction={(action) => {
+            handleRemoteCommand(action);
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -1691,5 +2209,12 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: '#374151',
     fontWeight: '400',
+  },
+  modalContainer: {
+    backgroundColor: '#ffffff',
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
   },
 });

@@ -9,6 +9,7 @@ export interface Script {
   lastSyncedAt?: Date;
   isDeleted?: boolean;
   version: number;
+  language?: LanguageOption; // Language option with full details
 }
 
 export interface User {
@@ -72,10 +73,13 @@ export type RootStackParamList = {
   Home: undefined;
   ScriptEditor: { scriptId?: string };
   Teleprompter: { scriptId: string };
+  Analytics: undefined;
+  SessionDetail: { sessionId: string };
   Auth: undefined;
   SignIn: undefined;
   SignUp: undefined;
   Profile: undefined;
+  Subscription: undefined;
 };
 
 export interface TeleprompterSettings {
@@ -372,6 +376,188 @@ export interface WordTiming {
   estimatedPosition?: number;
   cumulativeWPM: number;
   instantWPM: number;
+}
+
+// Analytics Types
+export interface SessionReport {
+  id: string;
+  scriptId: string;
+  scriptTitle: string;
+  userId: string;
+  startTime: Date;
+  endTime: Date;
+  totalDuration: number; // milliseconds
+  totalWords: number;
+  wordsSpoken: number;
+  averageWPM: number;
+  targetWPM: number;
+  paceAnalysis: PaceAnalysisSegment[];
+  fillerWordAnalysis: FillerWordAnalysis;
+  scriptAdherence: ScriptAdherenceMetrics;
+  wpmHistory: WPMDataPoint[];
+  pauseAnalysis: PauseAnalysis[];
+  createdAt: Date;
+  tags?: string[];
+  notes?: string;
+}
+
+export interface ScriptAdherenceMetrics {
+  totalScriptWords: number;
+  wordsSpoken: number;
+  adherencePercentage: number;
+  skippedSections: SkippedSection[];
+  deviations: ScriptDeviation[];
+  accuracyScore: number;
+}
+
+export interface SkippedSection {
+  startWordIndex: number;
+  endWordIndex: number;
+  text: string;
+  duration: number;
+}
+
+export interface ScriptDeviation {
+  scriptWordIndex: number;
+  expectedWord: string;
+  spokenWord: string;
+  confidence: number;
+  timestamp: number;
+  type: 'substitution' | 'insertion' | 'deletion' | 'improvisation';
+}
+
+export interface FillerWordAnalysis {
+  totalFillerWords: number;
+  fillerRate: number; // fillers per minute
+  uniqueFillers: { [word: string]: number };
+  fillerInstances: FillerWordInstance[];
+  improvementSuggestions: string[];
+}
+
+export interface FillerWordInstance {
+  word: string;
+  timestamp: number;
+  wordIndex: number;
+  context: string;
+  confidence: number;
+}
+
+export interface PauseAnalysis {
+  startTime: number;
+  endTime: number;
+  duration: number;
+  type: 'natural' | 'hesitation' | 'technical';
+  context: string;
+  wordIndex: number;
+}
+
+export interface AnalyticsFilters {
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  scriptIds?: string[];
+  tags?: string[];
+  minDuration?: number;
+  maxDuration?: number;
+  wpmRange?: {
+    min?: number;
+    max?: number;
+  };
+}
+
+export interface AnalyticsSummary {
+  totalSessions: number;
+  totalPracticeTime: number; // milliseconds
+  averageSessionDuration: number;
+  averageWPM: number;
+  improvementTrend: number; // percentage change
+  fillerWordTrend: number;
+  mostPracticedScript: {
+    id: string;
+    title: string;
+    sessionCount: number;
+  };
+  performanceMetrics: {
+    consistency: number; // 0-100
+    accuracy: number; // 0-100
+    fluency: number; // 0-100
+  };
+  weeklyStats: WeeklyAnalytics[];
+}
+
+export interface WeeklyAnalytics {
+  week: string; // ISO week
+  sessionCount: number;
+  totalDuration: number;
+  averageWPM: number;
+  fillerWordRate: number;
+  adherenceScore: number;
+}
+
+export interface AnalyticsExportOptions {
+  format: 'csv' | 'pdf' | 'json' | 'excel';
+  includeCharts?: boolean;
+  includeRawData?: boolean;
+  includeSummary?: boolean;
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  sessionIds?: string[];
+}
+
+export interface ComparisonAnalytics {
+  sessions: SessionReport[];
+  metrics: {
+    wpmProgress: number;
+    fillerWordImprovement: number;
+    adherenceImprovement: number;
+    consistencyScore: number;
+  };
+  trends: {
+    wpm: TrendData[];
+    fillerWords: TrendData[];
+    adherence: TrendData[];
+  };
+  insights: string[];
+  recommendations: string[];
+}
+
+export interface TrendData {
+  date: Date;
+  value: number;
+  sessionId: string;
+}
+
+export interface AnalyticsStore {
+  // State
+  sessions: SessionReport[];
+  currentSession: SessionReport | null;
+  summary: AnalyticsSummary | null;
+  filters: AnalyticsFilters;
+  loading: boolean;
+  
+  // Session operations
+  createSession: (scriptId: string, targetWPM: number) => Promise<SessionReport>;
+  updateSession: (sessionId: string, updates: Partial<SessionReport>) => Promise<void>;
+  endSession: (sessionId: string, metrics: Partial<SessionReport>) => Promise<void>;
+  deleteSession: (sessionId: string) => Promise<void>;
+  
+  // Analytics operations
+  getSessions: (filters?: AnalyticsFilters) => Promise<SessionReport[]>;
+  getSessionById: (sessionId: string) => Promise<SessionReport | null>;
+  getSummary: (filters?: AnalyticsFilters) => Promise<AnalyticsSummary>;
+  compareSessions: (sessionIds: string[]) => Promise<ComparisonAnalytics>;
+  
+  // Export operations
+  exportSessions: (options: AnalyticsExportOptions) => Promise<string>;
+  generateReport: (sessionId: string, format: 'pdf' | 'html') => Promise<string>;
+  
+  // Filtering and search
+  setFilters: (filters: Partial<AnalyticsFilters>) => void;
+  clearFilters: () => void;
+  searchSessions: (query: string) => Promise<SessionReport[]>;
 }
 
 // Team Management Types
@@ -677,4 +863,247 @@ export interface SubscriptionStore {
   // Usage tracking
   updateUsage: () => Promise<void>;
   checkUsageLimits: () => Promise<void>;
+}
+
+// Multi-language Support Types
+export interface LanguageOption {
+  code: string; // ISO 639-1 language code (e.g., 'en', 'es', 'fr')
+  name: string; // Display name (e.g., 'English', 'Español', 'Français')
+  nativeName: string; // Native name (e.g., 'English', 'Español', 'Français')
+  rtl: boolean; // Right-to-left text direction
+  flag: string; // Unicode flag emoji or country code
+  deepgramModel: string; // Deepgram model identifier
+  supported: boolean; // Whether this language is currently supported
+}
+
+export interface ScriptLanguage {
+  scriptId: string;
+  language: LanguageOption;
+  detectedLanguage?: LanguageOption; // Auto-detected language
+  confidence?: number; // Detection confidence (0-1)
+  userOverride: boolean; // Whether user manually selected language
+}
+
+export interface MultiLanguageSettings {
+  autoDetectLanguage: boolean;
+  defaultLanguage: LanguageOption;
+  fallbackLanguage: LanguageOption;
+  enableRTLSupport: boolean;
+  showLanguageFlags: boolean;
+  enableTranslationSuggestions: boolean;
+}
+
+// Gamification Types
+export interface UserStreak {
+  currentStreak: number;
+  longestStreak: number;
+  lastPracticeDate: Date;
+  streakType: 'daily' | 'weekly';
+  isActive: boolean;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // Emoji or icon name
+  category: 'sessions' | 'performance' | 'consistency' | 'milestones' | 'language';
+  requirement: AchievementRequirement;
+  unlockedAt?: Date;
+  isSecret: boolean; // Hidden until unlocked
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  points: number; // XP points awarded
+}
+
+export interface AchievementRequirement {
+  type: 'sessions_count' | 'wpm_target' | 'filler_reduction' | 'streak_days' | 'languages_used' | 'total_time' | 'consistency_score';
+  target: number;
+  timeframe?: 'all_time' | 'monthly' | 'weekly' | 'daily';
+  conditions?: { [key: string]: any }; // Additional conditions
+}
+
+export interface UserProgress {
+  level: number;
+  totalXP: number;
+  xpToNextLevel: number;
+  totalSessions: number;
+  totalTimeMinutes: number;
+  achievements: Achievement[];
+  streaks: UserStreak[];
+  stats: ProgressStats;
+}
+
+export interface ProgressStats {
+  averageWPM: number;
+  bestWPM: number;
+  fillerWordRate: number; // Filler words per minute
+  consistencyScore: number; // 0-100 consistency rating
+  languagesUsed: string[]; // Language codes
+  improvementTrends: ProgressTrend[];
+}
+
+export interface ProgressTrend {
+  metric: 'wpm' | 'filler_rate' | 'consistency' | 'session_length';
+  timeframe: 'week' | 'month' | 'quarter' | 'year';
+  data: ProgressDataPoint[];
+  trend: 'improving' | 'stable' | 'declining';
+  changePercent: number;
+}
+
+export interface ProgressDataPoint {
+  timestamp: number;
+  value: number;
+  sessionCount: number;
+  note?: string;
+}
+
+export interface SocialShare {
+  platform: 'twitter' | 'linkedin' | 'facebook' | 'instagram' | 'clipboard';
+  achievementId: string;
+  customMessage?: string;
+  includeStats: boolean;
+  imageUrl?: string;
+}
+
+// Feedback System Types
+export interface FeedbackSubmission {
+  id: string;
+  type: 'bug_report' | 'feature_request' | 'general_feedback' | 'improvement_suggestion';
+  category: 'ui_ux' | 'performance' | 'features' | 'content' | 'technical' | 'other';
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  attachments?: FeedbackAttachment[];
+  diagnostics?: DiagnosticInfo;
+  userContact?: UserContactInfo;
+  status: 'submitted' | 'reviewing' | 'in_progress' | 'resolved' | 'closed';
+  createdAt: Date;
+  updatedAt: Date;
+  userId?: string;
+  isAnonymous: boolean;
+}
+
+export interface FeedbackAttachment {
+  id: string;
+  type: 'screenshot' | 'video' | 'log_file' | 'other';
+  filename: string;
+  size: number;
+  url?: string;
+  localPath?: string;
+  description?: string;
+}
+
+export interface DiagnosticInfo {
+  appVersion: string;
+  buildNumber: string;
+  platform: 'ios' | 'android' | 'web';
+  osVersion: string;
+  deviceModel: string;
+  deviceId: string; // Anonymized device identifier
+  memoryUsage: number;
+  diskSpace: number;
+  networkStatus: 'online' | 'offline' | 'poor';
+  lastError?: ErrorInfo;
+  recentActions: UserAction[];
+  performance: PerformanceInfo;
+}
+
+export interface ErrorInfo {
+  message: string;
+  stack?: string;
+  timestamp: number;
+  context: string; // Which screen/feature
+  userAction: string; // What user was trying to do
+}
+
+export interface UserAction {
+  action: string;
+  screen: string;
+  timestamp: number;
+  data?: { [key: string]: any };
+}
+
+export interface PerformanceInfo {
+  averageFPS: number;
+  memoryLeaks: boolean;
+  crashCount: number;
+  slowOperations: string[];
+  renderTimes: number[];
+}
+
+export interface UserContactInfo {
+  email?: string;
+  preferredContactMethod: 'email' | 'in_app' | 'none';
+  allowFollowUp: boolean;
+  timezone: string;
+}
+
+export interface FeedbackSettings {
+  enableAutoSubmission: boolean;
+  includeDiagnostics: boolean;
+  allowScreenshots: boolean;
+  shareUsageData: boolean;
+  contactPreferences: UserContactInfo;
+  categories: FeedbackCategory[];
+}
+
+export interface FeedbackCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  isDefault: boolean;
+  requiresAttachment: boolean;
+  suggestedActions: string[];
+}
+
+// Extended Script interface with language support
+export interface ExtendedScript extends Script {
+  language: LanguageOption;
+  detectedLanguage?: LanguageOption;
+  languageConfidence?: number;
+  isMultilingual: boolean;
+  textDirection: 'ltr' | 'rtl' | 'auto';
+  characterSet: string; // Unicode character set info
+}
+
+// Enhanced Analytics with Gamification
+export interface EnhancedAnalytics {
+  sessions: SessionSummaryReport[];
+  progress: UserProgress;
+  achievements: Achievement[];
+  trends: ProgressTrend[];
+  languageUsage: LanguageUsageStats[];
+  gamificationData: GamificationData;
+}
+
+export interface LanguageUsageStats {
+  language: LanguageOption;
+  sessionCount: number;
+  totalTime: number;
+  averageWPM: number;
+  accuracyRate: number;
+  lastUsed: Date;
+}
+
+export interface GamificationData {
+  currentLevel: number;
+  totalXP: number;
+  weeklyXP: number;
+  monthlyXP: number;
+  recentAchievements: Achievement[];
+  activeStreaks: UserStreak[];
+  leaderboardPosition?: number;
+  weeklyGoals: WeeklyGoal[];
+}
+
+export interface WeeklyGoal {
+  id: string;
+  type: 'sessions' | 'time' | 'improvement' | 'languages';
+  target: number;
+  current: number;
+  description: string;
+  xpReward: number;
+  isCompleted: boolean;
+  weekStart: Date;
 }

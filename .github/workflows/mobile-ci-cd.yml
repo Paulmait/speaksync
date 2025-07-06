@@ -1,0 +1,416 @@
+name: Mobile CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  EXPO_CLI_VERSION: 'latest'
+
+jobs:
+  # Static Analysis
+  lint:
+    name: ESLint & TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # Unit and Integration Tests
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run tests with coverage
+        run: npm run test:ci
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage/lcov.info
+          flags: mobile
+          name: mobile-coverage
+
+  # Security Audit
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # Build for Android
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Setup Expo CLI
+        run: npm install -g @expo/cli@${{ env.EXPO_CLI_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create app.config.js with secrets
+        run: |
+          cat > app.config.js << EOF
+          export default {
+            expo: {
+              name: "SpeakSync Mobile",
+              slug: "speaksync-mobile",
+              version: "1.0.0",
+              orientation: "portrait",
+              icon: "./assets/icon.png",
+              userInterfaceStyle: "light",
+              splash: {
+                image: "./assets/splash.png",
+                resizeMode: "contain",
+                backgroundColor: "#ffffff"
+              },
+              assetBundlePatterns: ["**/*"],
+              ios: {
+                supportsTablet: true,
+                bundleIdentifier: "com.speaksync.mobile"
+              },
+              android: {
+                adaptiveIcon: {
+                  foregroundImage: "./assets/adaptive-icon.png",
+                  backgroundColor: "#FFFFFF"
+                },
+                package: "com.speaksync.mobile"
+              },
+              web: {
+                favicon: "./assets/favicon.png"
+              },
+              extra: {
+                firebaseApiKey: "${{ secrets.FIREBASE_API_KEY }}",
+                firebaseAuthDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+                firebaseProjectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
+                firebaseStorageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+                firebaseMessagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
+                firebaseAppId: "${{ secrets.FIREBASE_APP_ID }}",
+                deepgramApiKey: "${{ secrets.DEEPGRAM_API_KEY }}",
+                revenueCatApiKey: "${{ secrets.REVENUECAT_API_KEY }}"
+              }
+            }
+          };
+          EOF
+
+      - name: Prebuild Android
+        run: npx expo prebuild --platform android --clean
+
+      - name: Build Android APK
+        run: cd android && ./gradlew assembleRelease
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+  # Build for iOS (requires macOS runner)
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Expo CLI
+        run: npm install -g @expo/cli@${{ env.EXPO_CLI_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create app.config.js with secrets
+        run: |
+          cat > app.config.js << EOF
+          export default {
+            expo: {
+              name: "SpeakSync Mobile",
+              slug: "speaksync-mobile",
+              version: "1.0.0",
+              orientation: "portrait",
+              icon: "./assets/icon.png",
+              userInterfaceStyle: "light",
+              splash: {
+                image: "./assets/splash.png",
+                resizeMode: "contain",
+                backgroundColor: "#ffffff"
+              },
+              assetBundlePatterns: ["**/*"],
+              ios: {
+                supportsTablet: true,
+                bundleIdentifier: "com.speaksync.mobile"
+              },
+              android: {
+                adaptiveIcon: {
+                  foregroundImage: "./assets/adaptive-icon.png",
+                  backgroundColor: "#FFFFFF"
+                },
+                package: "com.speaksync.mobile"
+              },
+              web: {
+                favicon: "./assets/favicon.png"
+              },
+              extra: {
+                firebaseApiKey: "${{ secrets.FIREBASE_API_KEY }}",
+                firebaseAuthDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+                firebaseProjectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
+                firebaseStorageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+                firebaseMessagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
+                firebaseAppId: "${{ secrets.FIREBASE_APP_ID }}",
+                deepgramApiKey: "${{ secrets.DEEPGRAM_API_KEY }}",
+                revenueCatApiKey: "${{ secrets.REVENUECAT_API_KEY }}"
+              }
+            }
+          };
+          EOF
+
+      - name: Prebuild iOS
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build iOS app
+        run: |
+          cd ios
+          xcodebuild -workspace SpeakSyncMobile.xcworkspace \
+                     -scheme SpeakSyncMobile \
+                     -configuration Release \
+                     -destination generic/platform=iOS \
+                     -archivePath $PWD/build/SpeakSyncMobile.xcarchive \
+                     archive
+
+      - name: Upload iOS build
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-archive
+          path: ios/build/SpeakSyncMobile.xcarchive
+
+  # E2E Testing with Detox (Android)
+  e2e-android:
+    name: E2E Tests (Android)
+    runs-on: macos-latest
+    needs: [build-android]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v3
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/release/
+
+      - name: Create Android Emulator
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "system-images;android-29;google_apis;x86"
+          echo "no" | $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager create avd --force --name test --abi google_apis/x86 --package "system-images;android-29;google_apis;x86"
+
+      - name: Start Android Emulator
+        run: |
+          $ANDROID_HOME/emulator/emulator -avd test -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim &
+          $ANDROID_HOME/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed | tr -d '\r') ]]; do sleep 1; done; input keyevent 82'
+
+      - name: Run E2E tests
+        run: npm run test:e2e:android
+
+  # Deploy to Expo for internal testing
+  deploy-expo:
+    name: Deploy to Expo
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Expo CLI
+        run: npm install -g @expo/cli@${{ env.EXPO_CLI_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Publish to Expo
+        run: expo publish
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # Deploy to App Stores (Production)
+  deploy-stores:
+    name: Deploy to App Stores
+    runs-on: ubuntu-latest
+    needs: [e2e-android]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Fastlane
+        run: |
+          sudo gem install fastlane
+          cd android && bundle install
+          cd ../ios && bundle install
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/release/
+
+      - name: Deploy Android to Google Play
+        run: |
+          cd android
+          fastlane deploy
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Deploy iOS to App Store
+        run: |
+          cd ios
+          fastlane deploy
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+
+  # Performance and Bundle Analysis
+  performance:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Bundle size analysis
+        run: |
+          npx expo export --platform all
+          npx expo-doctor
+
+      - name: Performance budget check
+        run: |
+          # Check bundle size limits
+          BUNDLE_SIZE=$(du -sk dist | cut -f1)
+          if [ $BUNDLE_SIZE -gt 50000 ]; then
+            echo "Bundle size exceeds limit: ${BUNDLE_SIZE}KB > 50MB"
+            exit 1
+          fi

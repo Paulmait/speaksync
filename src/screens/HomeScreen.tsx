@@ -227,6 +227,23 @@ export default function HomeScreen() {
         </Banner>
       )}
 
+      {/* Header with Analytics button */}
+      <Surface style={styles.headerSurface}>
+        <View style={styles.headerContainer}>
+          <Text variant="headlineSmall" style={styles.headerTitle}>
+            My Scripts
+          </Text>
+          <IconButton
+            icon="chart-line"
+            mode="contained"
+            iconColor="#ffffff"
+            containerColor="#6366f1"
+            size={20}
+            onPress={() => navigation.navigate('Analytics')}
+          />
+        </View>
+      </Surface>
+
       <Searchbar
         placeholder="Search scripts..."
         onChangeText={setSearchQuery}
@@ -346,5 +363,21 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#6366f1',
+  },
+  headerSurface: {
+    elevation: 2,
+    backgroundColor: '#ffffff',
+    marginBottom: 8,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    color: '#1f2937',
   },
 });

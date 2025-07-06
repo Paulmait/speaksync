@@ -1,0 +1,485 @@
+/**
+ * SpeakSync Browser Extension - Popup Styles
+ */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 380px;
+  min-height: 500px;
+}
+
+.popup-container {
+  background: white;
+  border-radius: 12px;
+  margin: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.popup-header {
+  background: linear-gradient(135deg, #4A90E2, #357ABD);
+  color: white;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.logo h1 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.version {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Status Section */
+.status-section {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+  background-color: #10B981;
+}
+
+.status-dot.disconnected {
+  background-color: #EF4444;
+}
+
+.status-dot.connecting {
+  background-color: #F59E0B;
+}
+
+.status-text {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.current-tab {
+  margin-top: 4px;
+}
+
+.tab-info {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Controls Section */
+.controls-section {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.primary-button {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.primary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.primary-button:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.primary-button.active {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+}
+
+.secondary-button {
+  padding: 10px 16px;
+  background: white;
+  color: #4A90E2;
+  border: 2px solid #4A90E2;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background: #4A90E2;
+  color: white;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.button-icon {
+  font-size: 16px;
+}
+
+.button-text {
+  font-size: inherit;
+}
+
+/* Settings Section */
+.settings-section {
+  border-bottom: 1px solid #eee;
+}
+
+.settings-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+.settings-header:hover {
+  background: #e9ecef;
+}
+
+.settings-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.icon-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.expand-icon {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.settings-header.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+.settings-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.settings-content.expanded {
+  max-height: 1000px;
+  padding: 0 16px 16px;
+}
+
+.setting-group {
+  margin-bottom: 16px;
+}
+
+.setting-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-control input[type="range"] {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: #ddd;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.setting-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4A90E2;
+  cursor: pointer;
+}
+
+.setting-control input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4A90E2;
+  cursor: pointer;
+  border: none;
+}
+
+.setting-value {
+  font-size: 12px;
+  color: #666;
+  min-width: 40px;
+  text-align: right;
+}
+
+.setting-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+}
+
+.setting-control input[type="color"] {
+  width: 40px;
+  height: 32px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.preset-button {
+  padding: 6px 12px;
+  font-size: 11px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-button:hover {
+  background: #f0f0f0;
+}
+
+.position-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  max-width: 120px;
+}
+
+.position-button {
+  aspect-ratio: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.position-button:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
+}
+
+.position-button.active {
+  background: #4A90E2;
+  color: white;
+  border-color: #4A90E2;
+}
+
+/* Support Section */
+.support-section {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.support-links {
+  display: flex;
+  gap: 16px;
+}
+
+.support-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4A90E2;
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s ease;
+}
+
+.support-link:hover {
+  color: #357ABD;
+}
+
+.link-icon {
+  font-size: 14px;
+}
+
+/* Footer */
+.popup-footer {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-link {
+  color: #666;
+  text-decoration: none;
+  font-size: 11px;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: #4A90E2;
+}
+
+.separator {
+  color: #ccc;
+  font-size: 10px;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .popup-container {
+    border: 2px solid #000;
+  }
+  
+  .primary-button:not(:disabled) {
+    border: 2px solid #000;
+  }
+}
+
+/* Focus styles */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(135deg, #2D3748 0%, #1A202C 100%);
+  }
+  
+  .popup-container {
+    background: #2D3748;
+    color: #E2E8F0;
+  }
+  
+  .settings-header {
+    background: #4A5568;
+  }
+  
+  .settings-header:hover {
+    background: #718096;
+  }
+  
+  .popup-footer {
+    background: #4A5568;
+  }
+  
+  .setting-select,
+  .preset-button,
+  .position-button {
+    background: #4A5568;
+    border-color: #718096;
+    color: #E2E8F0;
+  }
+  
+  .footer-link {
+    color: #A0AEC0;
+  }
+}

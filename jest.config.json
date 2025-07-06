@@ -1,0 +1,38 @@
+{
+  "preset": "jest-expo",
+  "testEnvironment": "jest-environment-jsdom",
+  "setupFiles": ["<rootDir>/node_modules/react-native/jest/setup.js"],
+  "setupFilesAfterEnv": [
+    "<rootDir>/jest-setup.js"
+  ],
+  "testMatch": [
+    "**/__tests__/**/*.(ts|tsx|js)",
+    "**/*.(test|spec).(ts|tsx|js)"
+  ],
+  "testPathIgnorePatterns": [
+    "<rootDir>/e2e/",
+    "<rootDir>/node_modules/"
+  ],
+  "collectCoverageFrom": [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/__tests__/**",
+    "!src/**/*.test.{ts,tsx}",
+    "!src/**/index.ts"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 50,
+      "functions": 50,
+      "lines": 50,
+      "statements": 50
+    }
+  },
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1"
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|expo|@unimodules|@expo|expo-.*|@react-native-community|react-native-paper|zustand|react-native-chart-kit|react-native-svg)"
+  ],
+  "testTimeout": 10000
+}

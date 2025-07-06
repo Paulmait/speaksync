@@ -1,0 +1,245 @@
+/**
+ * SpeakSync Browser Extension - Content Script Styles
+ * Styles for the overlay teleprompter interface
+ */
+
+/* Main overlay container */
+.speaksync-overlay-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.speaksync-overlay-container * {
+  box-sizing: border-box;
+}
+
+/* Header styles */
+.speaksync-overlay-header {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.speaksync-overlay-header button {
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+}
+
+.speaksync-overlay-header button:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.speaksync-overlay-header button:active {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Content area styles */
+.speaksync-overlay-content {
+  /* Custom scrollbar for webkit browsers */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.speaksync-overlay-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.speaksync-overlay-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.speaksync-overlay-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.speaksync-overlay-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Active paragraph highlighting */
+.speaksync-overlay-content .active-paragraph {
+  animation: highlight-pulse 2s ease-in-out infinite;
+}
+
+@keyframes highlight-pulse {
+  0%, 100% {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Resize handle */
+.speaksync-resize-handle {
+  transition: background-color 0.2s ease;
+}
+
+.speaksync-resize-handle:hover {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.speaksync-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-bottom: 8px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Overlay animations */
+.speaksync-overlay-container.entering {
+  animation: overlay-enter 0.3s ease-out forwards;
+}
+
+.speaksync-overlay-container.exiting {
+  animation: overlay-exit 0.3s ease-in forwards;
+}
+
+@keyframes overlay-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes overlay-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .speaksync-overlay-container {
+    border: 3px solid #ffffff;
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .speaksync-overlay-container,
+  .speaksync-overlay-header button,
+  .speaksync-resize-handle,
+  .active-paragraph {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .speaksync-overlay-container {
+    border-color: #555;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Focus styles for accessibility */
+.speaksync-overlay-header button:focus {
+  outline: 2px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+.speaksync-overlay-container:focus-within {
+  box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+}
+
+/* Text selection prevention for draggable areas */
+.speaksync-overlay-header,
+.speaksync-resize-handle {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Platform-specific optimizations */
+
+/* Google Meet optimizations */
+body[data-platform="google-meet"] .speaksync-overlay-container {
+  /* Avoid interfering with Meet's UI */
+  z-index: 999998; /* Lower than Meet's top modals */
+}
+
+/* Zoom optimizations */
+body[data-platform="zoom"] .speaksync-overlay-container {
+  /* Higher z-index for Zoom's complex UI */
+  z-index: 999999;
+}
+
+/* Microsoft Teams optimizations */
+body[data-platform="teams"] .speaksync-overlay-container {
+  /* Teams has deep iframe nesting */
+  z-index: 999999;
+  backdrop-filter: blur(15px); /* Stronger blur for Teams' busy UI */
+}
+
+/* Mobile responsiveness (for mobile browsers) */
+@media (max-width: 768px) {
+  .speaksync-overlay-container {
+    min-width: 280px;
+    max-width: 90vw;
+    font-size: 18px !important;
+  }
+  
+  .speaksync-overlay-header {
+    padding: 12px;
+  }
+  
+  .speaksync-overlay-content {
+    padding: 12px;
+  }
+  
+  .speaksync-resize-handle {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Print styles (hide overlay when printing) */
+@media print {
+  .speaksync-overlay-container {
+    display: none !important;
+  }
+}
+
+/* Ensure overlay doesn't interfere with video elements */
+video {
+  position: relative;
+  z-index: 1;
+}
+
+/* Accessibility improvements */
+.speaksync-overlay-container[aria-hidden="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* High DPI display support */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .speaksync-resize-handle::after {
+    transform: scale(0.5);
+    transform-origin: bottom right;
+  }
+}

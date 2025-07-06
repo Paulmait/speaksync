@@ -8,6 +8,9 @@ export { PacingMeterService, pacingMeterService } from './pacingMeterService';
 export { FillerWordDetectionService, fillerWordDetectionService } from './fillerWordDetectionService';
 export { teamService } from './teamService';
 export { subscriptionService } from './subscriptionService';
+export { default as multiLanguageService } from './multiLanguageService';
+export { default as gamificationService } from './gamificationService';
+export { default as feedbackService } from './feedbackService';
 
 // Re-export from adaptiveScrollService
 export * from './adaptiveScrollService';

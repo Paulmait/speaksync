@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { useScriptStore } from '../store/scriptStore';
+import { useSubscriptionStore } from '../store/subscriptionStore';
 import { 
   HomeScreen, 
   ScriptEditorScreen, 
@@ -11,7 +12,10 @@ import {
   AuthScreen,
   SignInScreen,
   SignUpScreen,
-  ProfileScreen
+  ProfileScreen,
+  AnalyticsScreen,
+  SessionDetailScreen,
+  SubscriptionScreen
 } from '../screens';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -29,7 +33,21 @@ const theme = {
 
 export default function AppNavigator() {
   const { authState } = useScriptStore();
+  const { initializeRevenueCat } = useSubscriptionStore();
   const isAuthenticated = !!authState.user;
+
+  // Initialize RevenueCat when the app starts
+  useEffect(() => {
+    const initSubscriptions = async () => {
+      try {
+        await initializeRevenueCat();
+      } catch (error) {
+        console.error('Failed to initialize RevenueCat:', error);
+      }
+    };
+
+    initSubscriptions();
+  }, [initializeRevenueCat]);
 
   return (
     <PaperProvider theme={theme}>
@@ -74,10 +92,31 @@ export default function AppNavigator() {
                 }}
               />
               <Stack.Screen
+                name="Analytics"
+                component={AnalyticsScreen}
+                options={{
+                  title: 'Analytics',
+                }}
+              />
+              <Stack.Screen
+                name="SessionDetail"
+                component={SessionDetailScreen}
+                options={{
+                  title: 'Session Details',
+                }}
+              />
+              <Stack.Screen
                 name="Profile"
                 component={ProfileScreen}
                 options={{
                   title: 'Profile',
+                }}
+              />
+              <Stack.Screen
+                name="Subscription"
+                component={SubscriptionScreen}
+                options={{
+                  title: 'Subscription',
                 }}
               />
             </>

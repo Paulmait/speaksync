@@ -6,3 +6,6 @@ export { default as SignInScreen } from './SignInScreen';
 export { default as SignUpScreen } from './SignUpScreen';
 export { default as ProfileScreen } from './ProfileScreen';
 export { default as TeamManagementScreen } from './TeamManagementScreen';
+export { default as AnalyticsScreen } from './AnalyticsScreen';
+export { default as SessionDetailScreen } from './SessionDetailScreen';
+export { default as SubscriptionScreen } from './SubscriptionScreen';

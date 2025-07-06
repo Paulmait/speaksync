@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpeakSync Overlay</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="logo">
+        <img src="../../icons/icon-32.png" alt="SpeakSync" class="logo-icon">
+        <h1>SpeakSync</h1>
+      </div>
+      <div class="version">v1.0.0</div>
+    </div>
+
+    <!-- Status Section -->
+    <div class="status-section">
+      <div class="status-indicator" id="connectionStatus">
+        <div class="status-dot disconnected"></div>
+        <span class="status-text">Disconnected</span>
+      </div>
+      <div class="current-tab" id="currentTab">
+        <span class="tab-info">No supported platform detected</span>
+      </div>
+    </div>
+
+    <!-- Main Controls -->
+    <div class="controls-section">
+      <button class="primary-button" id="toggleOverlay" disabled>
+        <span class="button-icon">▶️</span>
+        <span class="button-text">Start Overlay</span>
+      </button>
+
+      <div class="connection-controls">
+        <button class="secondary-button" id="connectApp">
+          <span class="button-icon">🔗</span>
+          <span class="button-text">Connect to SpeakSync App</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div class="settings-section">
+      <div class="settings-header">
+        <h3>Overlay Settings</h3>
+        <button class="icon-button" id="expandSettings">
+          <span class="expand-icon">⚙️</span>
+        </button>
+      </div>
+
+      <div class="settings-content" id="settingsContent">
+        <!-- Appearance Settings -->
+        <div class="setting-group">
+          <label class="setting-label">Opacity</label>
+          <div class="setting-control">
+            <input type="range" id="opacitySlider" min="0.3" max="1" step="0.1" value="0.8">
+            <span class="setting-value" id="opacityValue">80%</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Font Size</label>
+          <div class="setting-control">
+            <input type="range" id="fontSizeSlider" min="12" max="48" step="2" value="24">
+            <span class="setting-value" id="fontSizeValue">24px</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Font Family</label>
+          <select id="fontFamilySelect" class="setting-select">
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Helvetica, sans-serif">Helvetica</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="Georgia, serif">Georgia</option>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Text Color</label>
+          <div class="setting-control">
+            <input type="color" id="textColorPicker" value="#ffffff">
+            <button class="preset-button" data-color="#ffffff">White</button>
+            <button class="preset-button" data-color="#000000">Black</button>
+            <button class="preset-button" data-color="#00ff00">Green</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label class="setting-label">Background Color</label>
+          <div class="setting-control">
+            <input type="color" id="backgroundColorPicker" value="#000000">
+            <button class="preset-button" data-bg="#000000">Black</button>
+            <button class="preset-button" data-bg="#333333">Dark Gray</button>
+            <button class="preset-button" data-bg="#000080">Navy</button>
+          </div>
+        </div>
+
+        <!-- Position Settings -->
+        <div class="setting-group">
+          <label class="setting-label">Position Presets</label>
+          <div class="position-grid">
+            <button class="position-button" data-position="top-left">↖️</button>
+            <button class="position-button" data-position="top-center">⬆️</button>
+            <button class="position-button" data-position="top-right">↗️</button>
+            <button class="position-button" data-position="center-left">⬅️</button>
+            <button class="position-button" data-position="center">⏺️</button>
+            <button class="position-button" data-position="center-right">➡️</button>
+            <button class="position-button" data-position="bottom-left">↙️</button>
+            <button class="position-button" data-position="bottom-center">⬇️</button>
+            <button class="position-button" data-position="bottom-right">↘️</button>
+          </div>
+        </div>
+
+        <!-- Reset Settings -->
+        <div class="setting-group">
+          <button class="secondary-button full-width" id="resetSettings">
+            <span class="button-icon">🔄</span>
+            <span class="button-text">Reset to Defaults</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Support Section -->
+    <div class="support-section">
+      <div class="support-links">
+        <a href="#" id="helpLink" class="support-link">
+          <span class="link-icon">❓</span>
+          <span class="link-text">Help & Support</span>
+        </a>
+        <a href="#" id="feedbackLink" class="support-link">
+          <span class="link-icon">💬</span>
+          <span class="link-text">Send Feedback</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="popup-footer">
+      <div class="footer-links">
+        <a href="#" class="footer-link">Privacy</a>
+        <span class="separator">•</span>
+        <a href="#" class="footer-link">Terms</a>
+        <span class="separator">•</span>
+        <a href="#" class="footer-link">About</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

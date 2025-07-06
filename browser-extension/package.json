@@ -1,0 +1,105 @@
+{
+  "name": "speaksync-browser-extension",
+  "version": "1.0.0",
+  "description": "Draggable teleprompter overlay for video conferencing platforms",
+  "private": true,
+  "scripts": {
+    "dev": "npm run watch",
+    "build": "npm run clean && npm run copy && npm run minify",
+    "watch": "nodemon --watch src --ext js,css,html --exec \"npm run build\"",
+    "clean": "rimraf dist",
+    "copy": "copyfiles -u 1 \"src/**/*\" \"manifest.json\" \"icons/**/*\" dist",
+    "minify": "npm run minify:js && npm run minify:css",
+    "minify:js": "terser dist/src/background/background.js -o dist/src/background/background.js && terser dist/src/content/content.js -o dist/src/content/content.js && terser dist/src/popup/popup.js -o dist/src/popup/popup.js",
+    "minify:css": "cleancss -o dist/src/content/content.css dist/src/content/content.css && cleancss -o dist/src/popup/popup.css dist/src/popup/popup.css",
+    "package": "npm run build && npm run zip",
+    "zip": "cd dist && zip -r ../speaksync-extension.zip .",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .js",
+    "lint:fix": "eslint src --ext .js --fix",
+    "validate": "web-ext lint --source-dir=dist",
+    "serve:firefox": "web-ext run --source-dir=dist --browser-console",
+    "serve:chrome": "web-ext run --source-dir=dist --target=chromium"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "clean-css-cli": "^5.6.3",
+    "copyfiles": "^2.4.1",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
+    "rimraf": "^5.0.7",
+    "terser": "^5.31.0",
+    "web-ext": "^7.12.0"
+  },
+  "keywords": [
+    "teleprompter",
+    "presentation",
+    "video-conferencing",
+    "google-meet",
+    "zoom",
+    "microsoft-teams",
+    "overlay",
+    "browser-extension"
+  ],
+  "author": "SpeakSync Team",
+  "license": "MIT",
+  "homepage": "https://speaksync.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/speaksync/browser-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/speaksync/browser-extension/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Edge versions",
+    "last 2 Firefox versions"
+  ],
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.min.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "es2021": true,
+      "webextensions": true
+    },
+    "extends": [
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module"
+    },
+    "globals": {
+      "chrome": "readonly"
+    },
+    "rules": {
+      "no-console": "warn",
+      "no-unused-vars": "warn",
+      "prefer-const": "error",
+      "no-var": "error"
+    }
+  }
+}

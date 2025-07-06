@@ -3,12 +3,15 @@ import * as Speech from 'expo-speech';
 import Constants from 'expo-constants';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk';
+import { PerformanceOptimizer } from './performanceOptimizer';
+import MultiLanguageService from './multiLanguageService';
 import type { 
   SpeechRecognitionState, 
   AudioPermissions, 
   TranscriptionResult, 
   SpeechConfig,
-  WordMatch 
+  WordMatch,
+  LanguageOption
 } from '../types';
 
 class SpeechRecognitionService {
@@ -18,6 +21,9 @@ class SpeechRecognitionService {
   private listeners: Array<(state: SpeechRecognitionState) => void> = [];
   private wordListeners: Array<(word: string, confidence: number, timestamp: number) => void> = [];
   private karaokeListeners: Array<(match: WordMatch | null) => void> = [];
+  private performanceOptimizer = PerformanceOptimizer.getInstance();
+  private multiLanguageService = MultiLanguageService.getInstance();
+  private currentLanguage: LanguageOption | null = null;
   private currentState: SpeechRecognitionState = {
     isListening: false,
     isRecording: false,
@@ -292,28 +298,29 @@ class SpeechRecognitionService {
 
   private async startRecording(streamToDeepgram: boolean = false): Promise<void> {
     try {
+      // Optimized recording options with performance considerations
       const recordingOptions: Audio.RecordingOptions = {
         android: {
           extension: '.m4a',
           outputFormat: Audio.AndroidOutputFormat.MPEG_4,
           audioEncoder: Audio.AndroidAudioEncoder.AAC,
-          sampleRate: 16000,
+          sampleRate: 16000, // Optimized for speech recognition
           numberOfChannels: 1,
-          bitRate: 128000,
+          bitRate: 64000, // Reduced bitrate for better performance
         },
         ios: {
           extension: '.wav',
-          audioQuality: Audio.IOSAudioQuality.HIGH,
+          audioQuality: Audio.IOSAudioQuality.MEDIUM, // Balanced quality/performance
           sampleRate: 16000,
           numberOfChannels: 1,
-          bitRate: 128000,
+          bitRate: 64000,
           linearPCMBitDepth: 16,
           linearPCMIsBigEndian: false,
           linearPCMIsFloat: false,
         },
         web: {
           mimeType: 'audio/webm;codecs=opus',
-          bitsPerSecond: 128000,
+          bitsPerSecond: 64000, // Optimized for speech
         },
       };
 
@@ -324,7 +331,7 @@ class SpeechRecognitionService {
       await this.recording.startAsync();
 
       if (streamToDeepgram && this.connection) {
-        // Stream audio data to Deepgram
+        // Stream audio data to Deepgram with performance optimization
         this.streamAudioToDeepgram();
       }
 
@@ -542,6 +549,42 @@ class SpeechRecognitionService {
     this.listeners = [];
     this.wordListeners = [];
     this.karaokeListeners = [];
+  }
+
+  public async setLanguage(language: LanguageOption): Promise<void> {
+    this.currentLanguage = language;
+    
+    // Get Deepgram model configuration for this language
+    const deepgramConfig = await this.multiLanguageService.getDeepgramConfig(language);
+    
+    // Update speech config with language-specific settings
+    this.setConfig({
+      language: deepgramConfig.language,
+      model: deepgramConfig.model,
+      ...deepgramConfig.options
+    });
+    
+    // If currently listening, restart with new language
+    if (this.currentState.isListening) {
+      await this.stopListening();
+      setTimeout(() => this.startListening(), 100);
+    }
+  }
+
+  public getCurrentLanguage(): LanguageOption | null {
+    return this.currentLanguage;
+  }
+
+  public async setLanguageFromScript(scriptId: string): Promise<void> {
+    try {
+      const scriptLanguage = await this.multiLanguageService.getScriptLanguage(scriptId);
+      if (scriptLanguage) {
+        await this.setLanguage(scriptLanguage.language);
+      }
+    } catch (error) {
+      console.error('Failed to set language from script:', error);
+      // Continue with current language
+    }
   }
 }
 

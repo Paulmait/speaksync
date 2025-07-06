@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  I18nManager,
 } from 'react-native';
 import {
   Text,
@@ -15,11 +16,14 @@ import {
   IconButton,
   Surface,
   Divider,
+  Chip,
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useScriptStore } from '../store/scriptStore';
-import { RootStackParamList } from '../types';
+import { LanguageSelector } from '../components';
+import MultiLanguageService from '../services/multiLanguageService';
+import { RootStackParamList, LanguageOption, ExtendedScript } from '../types';
 
 type ScriptEditorScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -37,11 +41,16 @@ export default function ScriptEditorScreen() {
   const { scriptId } = route.params || {};
   
   const { addScript, updateScript, getScriptById } = useScriptStore();
+  const multiLanguageService = MultiLanguageService.getInstance();
   
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption | null>(null);
+  const [detectedLanguage, setDetectedLanguage] = useState<LanguageOption | null>(null);
+  const [languageConfidence, setLanguageConfidence] = useState<number | null>(null);
+  const [isDetectingLanguage, setIsDetectingLanguage] = useState(false);
 
   useEffect(() => {
     if (scriptId) {
@@ -50,7 +59,21 @@ export default function ScriptEditorScreen() {
         setTitle(script.title);
         setContent(script.content);
         setIsEditing(true);
+        
+        // Load script language if it's an ExtendedScript
+        const extendedScript = script as ExtendedScript;
+        if (extendedScript.language) {
+          setSelectedLanguage(extendedScript.language);
+        }
+        if (extendedScript.detectedLanguage) {
+          setDetectedLanguage(extendedScript.detectedLanguage);
+          setLanguageConfidence(extendedScript.languageConfidence || null);
+        }
       }
+    } else {
+      // Set default language for new scripts
+      const defaultLanguage = multiLanguageService.getDefaultLanguage();
+      setSelectedLanguage(defaultLanguage);
     }
   }, [scriptId, getScriptById]);
 
@@ -87,9 +110,41 @@ export default function ScriptEditorScreen() {
   const handleContentChange = (text: string) => {
     setContent(text);
     setHasUnsavedChanges(true);
+    
+    // Auto-detect language if enabled and content is substantial
+    if (text.trim().length > 50 && !selectedLanguage) {
+      detectLanguageFromContent(text);
+    }
   };
 
-  const handleSave = () => {
+  const detectLanguageFromContent = async (text: string) => {
+    if (isDetectingLanguage) return;
+    
+    setIsDetectingLanguage(true);
+    try {
+      const detected = await multiLanguageService.detectLanguage(text);
+      if (detected) {
+        setDetectedLanguage(detected);
+        setLanguageConfidence(0.85); // Mock confidence for now
+        
+        // Auto-select if no language is currently selected
+        if (!selectedLanguage) {
+          setSelectedLanguage(detected);
+        }
+      }
+    } catch (error) {
+      console.error('Language detection failed:', error);
+    } finally {
+      setIsDetectingLanguage(false);
+    }
+  };
+
+  const handleLanguageSelect = (language: LanguageOption) => {
+    setSelectedLanguage(language);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a title for your script.');
       return;
@@ -100,14 +155,35 @@ export default function ScriptEditorScreen() {
       return;
     }
 
-    if (isEditing && scriptId) {
-      updateScript(scriptId, { title: title.trim(), content: content.trim() });
-    } else {
-      addScript({ title: title.trim(), content: content.trim() });
+    if (!selectedLanguage) {
+      Alert.alert('Error', 'Please select a language for your script.');
+      return;
     }
 
-    setHasUnsavedChanges(false);
-    navigation.goBack();
+    const scriptData = {
+      title: title.trim(),
+      content: content.trim(),
+      language: selectedLanguage,
+      detectedLanguage,
+      languageConfidence,
+      isMultilingual: false, // Could be enhanced to detect this
+      textDirection: selectedLanguage.rtl ? 'rtl' as const : 'ltr' as const,
+      characterSet: 'UTF-8'
+    };
+
+    try {
+      if (isEditing && scriptId) {
+        await updateScript(scriptId, scriptData);
+      } else {
+        await addScript(scriptData);
+      }
+
+      setHasUnsavedChanges(false);
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save script. Please try again.');
+      console.error('Save error:', error);
+    }
   };
 
   const handlePreview = () => {
@@ -163,7 +239,10 @@ export default function ScriptEditorScreen() {
                 Script Title
               </Text>
               <TextInput
-                style={styles.titleInput}
+                style={[
+                  styles.titleInput,
+                  selectedLanguage?.rtl && styles.rtlText
+                ]}
                 value={title}
                 onChangeText={handleTitleChange}
                 placeholder="Enter script title..."
@@ -172,6 +251,16 @@ export default function ScriptEditorScreen() {
               />
             </Card.Content>
           </Card>
+
+          <LanguageSelector
+            selectedLanguage={selectedLanguage}
+            onLanguageSelect={handleLanguageSelect}
+            showDetectionInfo={!!detectedLanguage}
+            detectedLanguage={detectedLanguage}
+            confidence={languageConfidence || undefined}
+            title="Script Language"
+            subtitle="Select the language of your script for optimal speech recognition"
+          />
 
           <Card style={styles.editorCard} mode="elevated">
             <Card.Content>
@@ -196,13 +285,26 @@ export default function ScriptEditorScreen() {
                     iconColor="#374151"
                     containerColor="#f3f4f6"
                   />
+                  {selectedLanguage?.rtl && (
+                    <Chip
+                      mode="outlined"
+                      compact
+                      style={styles.rtlIndicator}
+                      textStyle={styles.rtlText}
+                    >
+                      RTL
+                    </Chip>
+                  )}
                 </View>
               </View>
               
               <Divider style={styles.divider} />
               
               <TextInput
-                style={styles.contentInput}
+                style={[
+                  styles.contentInput,
+                  selectedLanguage?.rtl && styles.rtlText
+                ]}
                 value={content}
                 onChangeText={handleContentChange}
                 placeholder="Start writing your script here..."
@@ -227,7 +329,7 @@ export default function ScriptEditorScreen() {
               mode="contained"
               onPress={handleSave}
               style={[styles.button, styles.saveButton]}
-              disabled={!title.trim() || !content.trim()}
+              disabled={!title.trim() || !content.trim() || !selectedLanguage}
             >
               {isEditing ? 'Update' : 'Save'}
             </Button>
@@ -307,7 +409,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e5e7eb',
     minHeight: 300,
-    lineHeight: 24,
+  },
+  rtlText: {
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  rtlIndicator: {
+    marginLeft: 8,
+    backgroundColor: '#E3F2FD',
   },
   actionButtons: {
     flexDirection: 'row',

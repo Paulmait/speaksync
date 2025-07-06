@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
   Text,
@@ -9,13 +9,20 @@ import {
   Divider,
   Surface,
   Badge,
+  Portal,
+  Modal,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useScriptStore } from '../store/scriptStore';
+import { FeedbackPanel, GamificationPanel } from '../components';
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const { authState, syncState, signOut, syncScripts, retryFailedOperations } = useScriptStore();
+  
+  // State for feedback and gamification modals
+  const [showFeedbackPanel, setShowFeedbackPanel] = useState(false);
+  const [showGamificationPanel, setShowGamificationPanel] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert(
@@ -225,6 +232,31 @@ export default function ProfileScreen() {
         </Card.Content>
       </Card>
 
+      {/* Feedback & Support */}
+      <Card style={styles.card} mode="elevated">
+        <Card.Content>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Feedback & Support
+          </Text>
+          
+          <List.Item
+            title="Send Feedback"
+            description="Report bugs or suggest features"
+            left={() => <List.Icon icon="message-alert" />}
+            right={() => <List.Icon icon="chevron-right" />}
+            onPress={() => setShowFeedbackPanel(true)}
+          />
+          
+          <List.Item
+            title="View Progress"
+            description="See achievements and stats"
+            left={() => <List.Icon icon="trophy" />}
+            right={() => <List.Icon icon="chevron-right" />}
+            onPress={() => setShowGamificationPanel(true)}
+          />
+        </Card.Content>
+      </Card>
+
       {/* Sign Out */}
       <View style={styles.signOutContainer}>
         <Button
@@ -237,6 +269,30 @@ export default function ProfileScreen() {
           Sign Out
         </Button>
       </View>
+
+      {/* Feedback Panel Modal */}
+      <Portal>
+        <FeedbackPanel
+          visible={showFeedbackPanel}
+          onDismiss={() => setShowFeedbackPanel(false)}
+          onSubmitted={(feedbackId) => {
+            console.log('Feedback submitted:', feedbackId);
+            Alert.alert(
+              'Feedback Sent',
+              'Thank you for your feedback! We will review it and get back to you.',
+              [{ text: 'OK', onPress: () => setShowFeedbackPanel(false) }]
+            );
+          }}
+        />
+      </Portal>
+
+      {/* Gamification Panel Modal */}
+      <Portal>
+        <GamificationPanel
+          visible={showGamificationPanel}
+          onDismiss={() => setShowGamificationPanel(false)}
+        />
+      </Portal>
     </ScrollView>
   );
 }
@@ -313,5 +369,12 @@ const styles = StyleSheet.create({
   },
   signOutButtonLabel: {
     color: '#ef4444',
+  },
+  modalContainer: {
+    backgroundColor: '#ffffff',
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
   },
 });

@@ -108,18 +108,18 @@ class SubscriptionService {
         if (docSnapshot.exists()) {
           const data = docSnapshot.data();
           this.userSubscription = {
-            subscriptionTier: data.subscriptionTier,
-            subscriptionStatus: data.subscriptionStatus,
-            subscriptionStartDate: data.subscriptionStartDate?.toMillis() || Date.now(),
-            subscriptionEndDate: data.subscriptionEndDate?.toMillis(),
-            freeTrialEndDate: data.freeTrialEndDate?.toMillis(),
-            lastPaymentDate: data.lastPaymentDate?.toMillis(),
-            nextBillingDate: data.nextBillingDate?.toMillis(),
-            stripeCustomerId: data.stripeCustomerId,
-            revenueCatUserId: data.revenueCatUserId,
-            cancelAtPeriodEnd: data.cancelAtPeriodEnd,
-            paymentMethod: data.paymentMethod,
-            receiptData: data.receiptData,
+            subscriptionTier: data['subscriptionTier'],
+            subscriptionStatus: data['subscriptionStatus'],
+            subscriptionStartDate: data['subscriptionStartDate']?.toMillis() || Date.now(),
+            subscriptionEndDate: data['subscriptionEndDate']?.toMillis(),
+            freeTrialEndDate: data['freeTrialEndDate']?.toMillis(),
+            lastPaymentDate: data['lastPaymentDate']?.toMillis(),
+            nextBillingDate: data['nextBillingDate']?.toMillis(),
+            stripeCustomerId: data['stripeCustomerId'],
+            revenueCatUserId: data['revenueCatUserId'],
+            cancelAtPeriodEnd: data['cancelAtPeriodEnd'],
+            paymentMethod: data['paymentMethod'],
+            receiptData: data['receiptData'],
           };
         } else {
           // No subscription document, create default free subscription
@@ -142,10 +142,10 @@ class SubscriptionService {
         if (docSnapshot.exists()) {
           const data = docSnapshot.data();
           this.freeTierUsage = {
-            freeSessionCount: data.freeSessionCount || 0,
-            freeSessionDurationAccumulated: data.freeSessionDurationAccumulated || 0,
-            savedScriptsCount: data.savedScriptsCount || 0,
-            lastUpdated: data.lastUpdated?.toMillis() || Date.now(),
+            freeSessionCount: data['freeSessionCount'] || 0,
+            freeSessionDurationAccumulated: data['freeSessionDurationAccumulated'] || 0,
+            savedScriptsCount: data['savedScriptsCount'] || 0,
+            lastUpdated: data['lastUpdated']?.toMillis() || Date.now(),
           };
         } else {
           // No usage document, create default
@@ -184,18 +184,18 @@ class SubscriptionService {
       if (docSnap.exists()) {
         const data = docSnap.data();
         this.userSubscription = {
-          subscriptionTier: data.subscriptionTier,
-          subscriptionStatus: data.subscriptionStatus,
-          subscriptionStartDate: data.subscriptionStartDate?.toMillis() || Date.now(),
-          subscriptionEndDate: data.subscriptionEndDate?.toMillis(),
-          freeTrialEndDate: data.freeTrialEndDate?.toMillis(),
-          lastPaymentDate: data.lastPaymentDate?.toMillis(),
-          nextBillingDate: data.nextBillingDate?.toMillis(),
-          stripeCustomerId: data.stripeCustomerId,
-          revenueCatUserId: data.revenueCatUserId,
-          cancelAtPeriodEnd: data.cancelAtPeriodEnd,
-          paymentMethod: data.paymentMethod,
-          receiptData: data.receiptData,
+          subscriptionTier: data['subscriptionTier'],
+          subscriptionStatus: data['subscriptionStatus'],
+          subscriptionStartDate: data['subscriptionStartDate']?.toMillis() || Date.now(),
+          subscriptionEndDate: data['subscriptionEndDate']?.toMillis(),
+          freeTrialEndDate: data['freeTrialEndDate']?.toMillis(),
+          lastPaymentDate: data['lastPaymentDate']?.toMillis(),
+          nextBillingDate: data['nextBillingDate']?.toMillis(),
+          stripeCustomerId: data['stripeCustomerId'],
+          revenueCatUserId: data['revenueCatUserId'],
+          cancelAtPeriodEnd: data['cancelAtPeriodEnd'],
+          paymentMethod: data['paymentMethod'],
+          receiptData: data['receiptData'],
         };
       } else {
         // No subscription document found, create default
@@ -232,10 +232,10 @@ class SubscriptionService {
       if (docSnap.exists()) {
         const data = docSnap.data();
         this.freeTierUsage = {
-          freeSessionCount: data.freeSessionCount || 0,
-          freeSessionDurationAccumulated: data.freeSessionDurationAccumulated || 0,
-          savedScriptsCount: data.savedScriptsCount || 0,
-          lastUpdated: data.lastUpdated?.toMillis() || Date.now(),
+          freeSessionCount: data['freeSessionCount'] || 0,
+          freeSessionDurationAccumulated: data['freeSessionDurationAccumulated'] || 0,
+          savedScriptsCount: data['savedScriptsCount'] || 0,
+          lastUpdated: data['lastUpdated']?.toMillis() || Date.now(),
         };
       } else {
         // No usage document found, create default
@@ -708,9 +708,195 @@ class SubscriptionService {
   }
 
   /**
-   * Update subscription data
+   * Get user's subscription details
    */
-  private async updateSubscription(userId: string, updates: Partial<UserSubscription>): Promise<void> {
+  public async getSubscription(userId: string): Promise<UserSubscription | null> {
+    try {
+      await this.fetchUserSubscription(userId);
+      return this.userSubscription;
+    } catch (error) {
+      this.logger.error("Failed to get subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Update user subscription
+   */
+  public async updateSubscription(userId: string, tier: SubscriptionTier | Partial<UserSubscription>): Promise<void> {
+    try {
+      // If tier is a string (SubscriptionTier), convert it to a partial subscription object
+      const updates: Partial<UserSubscription> = typeof tier === 'string' ? 
+        { subscriptionTier: tier, subscriptionStatus: SubscriptionStatus.ACTIVE } : 
+        tier;
+      
+      await this.updateSubscriptionInternal(userId, updates);
+    } catch (error) {
+      this.logger.error("Failed to update subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get display name for subscription tier
+   */
+  public getTierDisplayName(tier: SubscriptionTier): string {
+    const displayNames: Record<SubscriptionTier, string> = {
+      [SubscriptionTier.FREE]: 'Free',
+      [SubscriptionTier.PRO]: 'Pro',
+      [SubscriptionTier.STUDIO]: 'Studio'
+    };
+    
+    return displayNames[tier] || 'Unknown';
+  }
+  
+  /**
+   * Get color for subscription tier
+   */
+  public getTierColor(tier: SubscriptionTier): string {
+    const colors: Record<SubscriptionTier, string> = {
+      [SubscriptionTier.FREE]: '#718096',
+      [SubscriptionTier.PRO]: '#4299E1',
+      [SubscriptionTier.STUDIO]: '#805AD5'
+    };
+    
+    return colors[tier] || '#718096';
+  }
+
+  /**
+   * Cancel user subscription
+   */
+  public async cancelSubscription(userId: string): Promise<void> {
+    try {
+      await this.updateSubscriptionInternal(userId, {
+        cancelAtPeriodEnd: true
+      });
+    } catch (error) {
+      this.logger.error("Failed to cancel subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Reactivate a cancelled subscription
+   */
+  public async reactivateSubscription(userId: string): Promise<void> {
+    try {
+      await this.updateSubscriptionInternal(userId, {
+        cancelAtPeriodEnd: false
+      });
+    } catch (error) {
+      this.logger.error("Failed to reactivate subscription", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.HIGH
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a feature is available for the subscription
+   */
+  public checkFeature(feature: keyof FeatureFlags, subscription: UserSubscription | null): boolean {
+    if (!subscription) {
+      return false;
+    }
+    
+    const tier = subscription.subscriptionTier || SubscriptionTier.FREE;
+    const tierFeatures = TierFeatureMapping[tier];
+    
+    return !!tierFeatures[feature];
+  }
+
+  /**
+   * Get list of features available for a subscription tier
+   */
+  public getFeaturesList(tier: SubscriptionTier): Array<keyof FeatureFlags> {
+    const tierFeatures = TierFeatureMapping[tier] || {};
+    return Object.keys(tierFeatures).filter(
+      feature => tierFeatures[feature as keyof FeatureFlags]
+    ) as Array<keyof FeatureFlags>;
+  }
+
+  /**
+   * Check user's usage limits
+   */
+  public async checkUsageLimits(userId: string): Promise<{
+    scripts: { used: number, limit: number, percentage: number },
+    sessions: { used: number, limit: number, percentage: number },
+    duration: { used: number, limit: number, percentage: number }
+  }> {
+    try {
+      await this.fetchFreeTierUsage(userId);
+      
+      if (!this.freeTierUsage) {
+        throw new Error('Usage data not available');
+      }
+      
+      const tier = this.userSubscription?.subscriptionTier || SubscriptionTier.FREE;
+      
+      // If not on free tier, return unlimited usage
+      if (tier !== SubscriptionTier.FREE) {
+        return {
+          scripts: { used: 0, limit: Infinity, percentage: 0 },
+          sessions: { used: 0, limit: Infinity, percentage: 0 },
+          duration: { used: 0, limit: Infinity, percentage: 0 }
+        };
+      }
+      
+      const usage = this.freeTierUsage;
+      const limits = FREE_TIER_LIMITS;
+      
+      return {
+        scripts: {
+          used: usage.savedScriptsCount || 0,
+          limit: limits.MAX_SCRIPTS,
+          percentage: Math.min(100, ((usage.savedScriptsCount || 0) / limits.MAX_SCRIPTS) * 100)
+        },
+        sessions: {
+          used: usage.freeSessionCount || 0,
+          limit: limits.MAX_SESSION_COUNT,
+          percentage: Math.min(100, ((usage.freeSessionCount || 0) / limits.MAX_SESSION_COUNT) * 100)
+        },
+        duration: {
+          used: usage.freeSessionDurationAccumulated || 0,
+          limit: limits.MAX_SESSION_DURATION,
+          percentage: Math.min(100, ((usage.freeSessionDurationAccumulated || 0) / limits.MAX_SESSION_DURATION) * 100)
+        }
+      };
+    } catch (error) {
+      this.logger.error("Failed to check usage limits", 
+        error instanceof Error ? error : new Error(String(error)), {
+        category: ErrorCategory.SUBSCRIPTION,
+        severity: ErrorSeverity.MEDIUM
+      });
+      
+      // Return default values if error
+      return {
+        scripts: { used: 0, limit: FREE_TIER_LIMITS.MAX_SCRIPTS, percentage: 0 },
+        sessions: { used: 0, limit: FREE_TIER_LIMITS.MAX_SESSION_COUNT, percentage: 0 },
+        duration: { used: 0, limit: FREE_TIER_LIMITS.MAX_SESSION_DURATION, percentage: 0 }
+      };
+    }
+  }
+
+  /**
+   * Internal method to update subscription data
+   */
+  private async updateSubscriptionInternal(userId: string, updates: Partial<UserSubscription>): Promise<void> {
     try {
       const docRef = doc(db, 'subscriptions', userId);
       const docSnap = await getDoc(docRef);

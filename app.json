@@ -13,7 +13,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.speaksync.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "SpeakSync needs access to your microphone for speech recognition and analysis.",
+        "NSCameraUsageDescription": "SpeakSync needs camera access for video recording your practice sessions."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +30,32 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-camera",
+      "expo-av"
+    ]
+  },
+  "hooks": {
+    "postPublish": [
+      {
+        "file": "sentry-expo/upload-sourcemaps",
+        "config": {
+          "organization": "your-organization",
+          "project": "speaksync-mobile"
+        }
+      }
+    ]
   }
 }

@@ -51,6 +51,7 @@ export interface LegalDocumentHistory {
 // Predefined legal document types
 export enum LegalDocumentType {
   TERMS_OF_USE = 'termsOfUse',
+  PRIVACY_POLICY = 'privacyPolicy',
   AI_DISCLAIMER = 'aiDisclaimer',
   COOKIE_POLICY = 'cookiePolicy',
   DMCA_POLICY = 'dmcaPolicy',
@@ -71,21 +72,21 @@ export interface LegalDocumentTemplate {
 
 // Admin operations interface
 export interface LegalDocumentAdmin {
-  createDocument: () => Promise<string>;
-  updateDocument: () => Promise<void>;
-  createNewVersion: () => Promise<void>;
-  activateVersion: () => Promise<void>;
-  deactivateDocument: () => Promise<void>;
-  deleteDocument: () => Promise<void>;
-  getDocumentHistory: () => Promise<LegalDocumentHistory>;
+  createDocument: (document: Omit<LegalDocument, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  updateDocument: (documentId: string, updates: Partial<LegalDocument>) => Promise<void>;
+  createNewVersion: (documentId: string, content: string, version: string, effectiveDate?: number) => Promise<void>;
+  activateVersion: (documentId: string, version: string) => Promise<void>;
+  deactivateDocument: (documentId: string) => Promise<void>;
+  deleteDocument: (documentId: string) => Promise<void>;
+  getDocumentHistory: (documentId: string) => Promise<LegalDocumentHistory>;
 }
 
 // Public read-only interface
 export interface LegalDocumentReader {
-  getActiveDocument: () => Promise<LegalDocument | null>;
+  getActiveDocument: (type: LegalDocumentType) => Promise<LegalDocument | null>;
   getAllActiveDocuments: () => Promise<LegalDocument[]>;
-  getDocumentByVersion: () => Promise<LegalDocument | null>;
-  getDocumentEffectiveDate: () => Promise<number | null>;
+  getDocumentByVersion: (type: LegalDocumentType, version: string) => Promise<LegalDocument | null>;
+  getDocumentEffectiveDate: (type: LegalDocumentType) => Promise<number | null>;
 }
 
 // User acceptance tracking

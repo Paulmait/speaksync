@@ -61,13 +61,18 @@ class LegalDocumentService implements LegalDocumentAdmin, LegalDocumentReader {
         return null;
       }
       
-      const docData = snapshot.docs[0].data();
+      const firstDoc = snapshot.docs[0];
+      if (!firstDoc) {
+        return null;
+      }
+
+      const docData = firstDoc.data();
       return {
-        id: snapshot.docs[0].id,
+        id: firstDoc.id,
         ...docData,
-        effectiveDate: docData.effectiveDate?.toMillis?.() || docData.effectiveDate,
-        createdAt: docData.createdAt?.toMillis?.() || docData.createdAt,
-        updatedAt: docData.updatedAt?.toMillis?.() || docData.updatedAt
+        effectiveDate: docData['effectiveDate']?.toMillis?.() || docData['effectiveDate'],
+        createdAt: docData['createdAt']?.toMillis?.() || docData['createdAt'],
+        updatedAt: docData['updatedAt']?.toMillis?.() || docData['updatedAt']
       } as LegalDocument;
     } catch (error) {
       console.error('Error fetching active document:', error);
@@ -91,9 +96,9 @@ class LegalDocumentService implements LegalDocumentAdmin, LegalDocumentReader {
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        effectiveDate: doc.data().effectiveDate?.toMillis?.() || doc.data().effectiveDate,
-        createdAt: doc.data().createdAt?.toMillis?.() || doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toMillis?.() || doc.data().updatedAt
+        effectiveDate: doc.data()['effectiveDate']?.toMillis?.() || doc.data()['effectiveDate'],
+        createdAt: doc.data()['createdAt']?.toMillis?.() || doc.data()['createdAt'],
+        updatedAt: doc.data()['updatedAt']?.toMillis?.() || doc.data()['updatedAt']
       })) as LegalDocument[];
     } catch (error) {
       console.error('Error fetching all active documents:', error);
@@ -119,13 +124,18 @@ class LegalDocumentService implements LegalDocumentAdmin, LegalDocumentReader {
         return null;
       }
       
-      const docData = snapshot.docs[0].data();
+      const firstDoc = snapshot.docs[0];
+      if (!firstDoc) {
+        return null;
+      }
+
+      const docData = firstDoc.data();
       return {
-        id: snapshot.docs[0].id,
+        id: firstDoc.id,
         ...docData,
-        effectiveDate: docData.effectiveDate?.toMillis?.() || docData.effectiveDate,
-        createdAt: docData.createdAt?.toMillis?.() || docData.createdAt,
-        updatedAt: docData.updatedAt?.toMillis?.() || docData.updatedAt
+        effectiveDate: docData['effectiveDate']?.toMillis?.() || docData['effectiveDate'],
+        createdAt: docData['createdAt']?.toMillis?.() || docData['createdAt'],
+        updatedAt: docData['updatedAt']?.toMillis?.() || docData['updatedAt']
       } as LegalDocument;
     } catch (error) {
       console.error('Error fetching document by version:', error);

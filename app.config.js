@@ -15,13 +15,21 @@ export default {
       backgroundColor: "#ffffff"
     },
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
+      bundleIdentifier: "com.speaksync.mobile",
+      buildNumber: "1",
+      infoPlist: {
+        NSMicrophoneUsageDescription: "SpeakSync needs access to your microphone for speech recognition and analysis.",
+        NSCameraUsageDescription: "SpeakSync needs camera access for video recording your practice sessions."
+      }
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
+      package: "com.speaksync.mobile",
+      versionCode: 1,
       edgeToEdgeEnabled: true
     },
     web: {
@@ -38,6 +46,9 @@ export default {
       firebaseAppId: process.env.FIREBASE_APP_ID,
       debugMode: process.env.DEBUG_MODE === 'true',
       enableSpeechLogging: process.env.ENABLE_SPEECH_LOGGING === 'true',
+      eas: {
+        projectId: "4728c611-fe9a-42b7-90d4-54d9ebef1c73"
+      },
     }
   }
 };

@@ -7,6 +7,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "ios:local": "node start-ios-testing.js",
+    "ios:check": "node check-ts-errors.js && npm run ios:local",
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -17,7 +19,20 @@
     "test:e2e:ios": "detox test --configuration ios",
     "test:e2e:android": "detox test --configuration android",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix"
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "build:ios": "npx eas-cli build --platform ios --profile development",
+    "build:ios:test": "npx eas-cli build --platform ios --profile test",
+    "build:ios:preview": "npx eas-cli build --platform ios --profile preview",
+    "build:ios:testflight": "npx eas-cli build --platform ios --profile testflight",
+    "build:android": "npx eas-cli build --platform android --profile development",
+    "build:android:test": "npx eas-cli build --platform android --profile test",
+    "build:android:preview": "npx eas-cli build --platform android --profile preview",
+    "update": "npx eas-cli update",
+    "submit:ios": "npx eas-cli submit --platform ios",
+    "submit:android": "npx eas-cli submit --platform android",
+    "register:devices": "npx eas-cli device:create",
+    "register:helper": "node register-test-devices.js",
+    "eas:check": "node eas-build-check.js"
   },
   "dependencies": {
     "@deepgram/sdk": "^4.7.0",
@@ -68,6 +83,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@babel/plugin-transform-flow-strip-types": "^7.27.1",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^13.2.0",
     "@types/jest": "^30.0.0",
@@ -83,6 +100,7 @@
     "jest": "^30.0.4",
     "jest-environment-jsdom": "^30.0.4",
     "jest-expo": "^53.0.9",
+    "kill-port-process": "^3.2.1",
     "react-test-renderer": "^19.0.0",
     "typescript": "~5.8.3"
   },

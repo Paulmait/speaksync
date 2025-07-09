@@ -32,7 +32,7 @@
     "^@/(.*)$": "<rootDir>/src/$1"
   },
   "transformIgnorePatterns": [
-    "node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|expo|@unimodules|@expo|expo-.*|@react-native-community|react-native-paper|zustand|react-native-chart-kit|react-native-svg)"
+    "node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|expo|@unimodules|@expo|expo-.*|@react-native-community|react-native-paper|zustand|react-native-chart-kit|react-native-svg|@react-native/js-polyfills)"
   ],
   "testTimeout": 10000
 }

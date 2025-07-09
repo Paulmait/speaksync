@@ -37,18 +37,18 @@ export const useSubscriptionStatus = () => {
           if (doc.exists()) {
             const data = doc.data();
             const subscription: UserSubscription = {
-              subscriptionTier: data.subscriptionTier || SubscriptionTier.FREE,
-              subscriptionStatus: data.subscriptionStatus || SubscriptionStatus.ACTIVE,
-              subscriptionStartDate: data.subscriptionStartDate?.toMillis() || Date.now(),
-              subscriptionEndDate: data.subscriptionEndDate?.toMillis(),
-              freeTrialEndDate: data.freeTrialEndDate?.toMillis(),
-              lastPaymentDate: data.lastPaymentDate?.toMillis(),
-              nextBillingDate: data.nextBillingDate?.toMillis(),
-              stripeCustomerId: data.stripeCustomerId,
-              revenueCatUserId: data.revenueCatUserId,
-              cancelAtPeriodEnd: data.cancelAtPeriodEnd,
-              paymentMethod: data.paymentMethod,
-              receiptData: data.receiptData,
+              subscriptionTier: data['subscriptionTier'] || SubscriptionTier.FREE,
+              subscriptionStatus: data['subscriptionStatus'] || SubscriptionStatus.ACTIVE,
+              subscriptionStartDate: data['subscriptionStartDate']?.toMillis() || Date.now(),
+              subscriptionEndDate: data['subscriptionEndDate']?.toMillis(),
+              freeTrialEndDate: data['freeTrialEndDate']?.toMillis(),
+              lastPaymentDate: data['lastPaymentDate']?.toMillis(),
+              nextBillingDate: data['nextBillingDate']?.toMillis(),
+              stripeCustomerId: data['stripeCustomerId'],
+              revenueCatUserId: data['revenueCatUserId'],
+              cancelAtPeriodEnd: data['cancelAtPeriodEnd'],
+              paymentMethod: data['paymentMethod'],
+              receiptData: data['receiptData'],
             };
 
             setState(prev => ({ ...prev, subscription, isLoading: false }));
@@ -75,10 +75,10 @@ export const useSubscriptionStatus = () => {
           if (doc.exists()) {
             const data = doc.data();
             const usage: FreeTierUsage = {
-              freeSessionCount: data.freeSessionCount || 0,
-              freeSessionDurationAccumulated: data.freeSessionDurationAccumulated || 0,
-              savedScriptsCount: data.savedScriptsCount || 0,
-              lastUpdated: data.lastUpdated?.toMillis() || Date.now(),
+              freeSessionCount: data['freeSessionCount'] || 0,
+              freeSessionDurationAccumulated: data['freeSessionDurationAccumulated'] || 0,
+              savedScriptsCount: data['savedScriptsCount'] || 0,
+              lastUpdated: data['lastUpdated']?.toMillis() || Date.now(),
             };
             setState(prev => ({ ...prev, usage }));
           } else {

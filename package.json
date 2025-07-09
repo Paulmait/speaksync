@@ -1,6 +1,5 @@
 {
   "name": "speaksyncmobile",
-  "type": "module",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -10,6 +9,14 @@
     "ios:local": "node start-ios-testing.js",
     "ios:check": "node check-ts-errors.js && npm run ios:local",
     "web": "expo start --web",
+    
+    "debug": "run-s debug:precheck debug:start",
+    "debug:precheck": "yarn check-backend && yarn clear-cache",
+    "debug:start": "expo start --dev-client --clear",
+    "clear-cache": "expo start -c",
+    "check-backend": "curl -I https://your-firebase-db.firebaseio.com/.json",
+    "reactotron": "reactotron-start",
+    
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -18,8 +25,11 @@
     "test:e2e:build": "detox build",
     "test:e2e:ios": "detox test --configuration ios",
     "test:e2e:android": "detox test --configuration android",
+    
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "test:comprehensive": "node run-comprehensive-tests.js",
+    "test:validate": "npm run test:comprehensive",
     "build:ios": "npx eas-cli build --platform ios --profile development",
     "build:ios:test": "npx eas-cli build --platform ios --profile test",
     "build:ios:preview": "npx eas-cli build --platform ios --profile preview",
@@ -32,7 +42,10 @@
     "submit:android": "npx eas-cli submit --platform android",
     "register:devices": "npx eas-cli device:create",
     "register:helper": "node register-test-devices.js",
-    "eas:check": "node eas-build-check.js"
+    "eas:check": "node eas-build-check.js",
+    "profile": "expo start --profile",
+    "profile:android": "expo start --android --profile",
+    "profile:ios": "expo start --ios --profile"
   },
   "dependencies": {
     "@deepgram/sdk": "^4.7.0",
@@ -77,9 +90,13 @@
     "react-native-screens": "^4.11.1",
     "react-native-svg": "^15.12.0",
     "react-native-vector-icons": "^10.2.0",
+    "reactotron-apisauce": "^3.0.6",
+    "reactotron-react-native": "^5.1.14",
+    "reactotron-redux": "^3.2.0",
     "readable-stream": "^4.7.0",
     "ws": "^8.18.3",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "npm-run-all": "^4.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

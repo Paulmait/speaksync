@@ -1,10 +1,20 @@
 {
   "presets": [
-    "babel-preset-expo",
-    "@babel/preset-flow"
+    "babel-preset-expo"
   ],
   "plugins": [
     "@babel/plugin-transform-flow-strip-types",
     ["@babel/plugin-proposal-private-property-in-object", { "loose": true }]
-  ]
+  ],
+  "env": {
+    "test": {
+      "presets": [
+        ["babel-preset-expo", { "jsxRuntime": "automatic" }]
+      ],
+      "plugins": [
+        "@babel/plugin-transform-flow-strip-types",
+        ["@babel/plugin-proposal-private-property-in-object", { "loose": true }]
+      ]
+    }
+  }
 }

@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/107</span>
+                <span class='fraction'>0/103</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/48</span>
+                <span class='fraction'>0/45</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/105</span>
+                <span class='fraction'>0/101</span>
             </div>
         
             
@@ -417,12 +417,7 @@
 <a name='L352'></a><a href='#L352'>352</a>
 <a name='L353'></a><a href='#L353'>353</a>
 <a name='L354'></a><a href='#L354'>354</a>
-<a name='L355'></a><a href='#L355'>355</a>
-<a name='L356'></a><a href='#L356'>356</a>
-<a name='L357'></a><a href='#L357'>357</a>
-<a name='L358'></a><a href='#L358'>358</a>
-<a name='L359'></a><a href='#L359'>359</a>
-<a name='L360'></a><a href='#L360'>360</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L355'></a><a href='#L355'>355</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -481,15 +476,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -690,6 +678,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -790,8 +780,8 @@ import { PerformanceOptimizer } from './performanceOptimizer';
 export interface VideoRecordingState {
   isRecording: boolean;
   hasPermission: boolean;
-  cameraType: CameraType;
-  flashMode: FlashMode;
+  cameraType: 'front' | 'back';
+  flashMode: 'off' | 'on' | 'auto';
   recordingUri: string | null;
   duration: number;
   isProcessing: boolean;
@@ -815,15 +805,15 @@ export interface WatermarkOptions {
 &nbsp;
 class VideoRecordingService {
   private static instance: VideoRecordingService;
-  private camera: Camera | null = <span class="cstat-no" title="statement not covered" >null;</span>
+  private camera: CameraView | null = <span class="cstat-no" title="statement not covered" >null;</span>
   private recording: any = <span class="cstat-no" title="statement not covered" >null;</span>
   private performanceOptimizer = <span class="cstat-no" title="statement not covered" >PerformanceOptimizer.getInstance();</span>
   private listeners: Array&lt;(state: VideoRecordingState) =&gt; void&gt; = <span class="cstat-no" title="statement not covered" >[];</span>
   private currentState: VideoRecordingState = <span class="cstat-no" title="statement not covered" >{</span>
     isRecording: false,
     hasPermission: false,
-    cameraType: CameraType.front,
-    flashMode: FlashMode.off,
+    cameraType: 'front',
+    flashMode: 'off',
     recordingUri: null,
     duration: 0,
     isProcessing: false,
@@ -840,17 +830,10 @@ class VideoRecordingService {
   // Initialize camera permissions and setup
 <span class="fstat-no" title="function not covered" >  as</span>ync initialize(): Promise&lt;boolean&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const cameraPermission = <span class="cstat-no" title="statement not covered" >await Camera.requestCameraPermissionsAsync();</span>
-      const audioPermission = <span class="cstat-no" title="statement not covered" >await Camera.requestMicrophonePermissionsAsync();</span>
-      const mediaLibraryPermission = <span class="cstat-no" title="statement not covered" >await MediaLibrary.requestPermissionsAsync();</span>
-&nbsp;
-      const hasPermission = 
-<span class="cstat-no" title="statement not covered" >        cameraPermission.status === 'granted' &amp;&amp;</span>
-        audioPermission.status === 'granted' &amp;&amp;
-        mediaLibraryPermission.status === 'granted';
-&nbsp;
-<span class="cstat-no" title="statement not covered" >      this.updateState({ hasPermission });</span>
-<span class="cstat-no" title="statement not covered" >      return hasPermission;</span>
+      // For now, return true to skip complex permission setup
+      // In production, implement proper expo-camera v16 permission checking
+<span class="cstat-no" title="statement not covered" >      this.updateState({ hasPermission: true });</span>
+<span class="cstat-no" title="statement not covered" >      return true;</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      console.error('Failed to initialize video recording:', error);</span>
 <span class="cstat-no" title="statement not covered" >      this.updateState({ </span>
@@ -1054,16 +1037,18 @@ class VideoRecordingService {
 &nbsp;
   // Get quality settings based on tier
 <span class="fstat-no" title="function not covered" >  pr</span>ivate getQualitySettings(quality: string) {
+    // Return simple quality strings for now
+    // In production, use proper expo-camera v16 quality constants
 <span class="cstat-no" title="statement not covered" >    switch (quality) {</span>
       case '4k':
-<span class="cstat-no" title="statement not covered" >        return Camera.Constants.VideoQuality['2160p'];</span>
+<span class="cstat-no" title="statement not covered" >        return '2160p';</span>
       case 'high':
-<span class="cstat-no" title="statement not covered" >        return Camera.Constants.VideoQuality['1080p'];</span>
+<span class="cstat-no" title="statement not covered" >        return '1080p';</span>
       case 'medium':
-<span class="cstat-no" title="statement not covered" >        return Camera.Constants.VideoQuality['720p'];</span>
+<span class="cstat-no" title="statement not covered" >        return '720p';</span>
       case 'low':
       default:
-<span class="cstat-no" title="statement not covered" >        return Camera.Constants.VideoQuality['480p'];</span>
+<span class="cstat-no" title="statement not covered" >        return '480p';</span>
     }
   }
 &nbsp;
@@ -1116,24 +1101,24 @@ class VideoRecordingService {
   }
 &nbsp;
   // Camera reference management
-<span class="fstat-no" title="function not covered" >  se</span>tCameraRef(camera: Camera | null): void {
+<span class="fstat-no" title="function not covered" >  se</span>tCameraRef(camera: CameraView | null): void {
 <span class="cstat-no" title="statement not covered" >    this.camera = camera;</span>
   }
 &nbsp;
   // Switch camera (front/back)
 <span class="fstat-no" title="function not covered" >  sw</span>itchCamera(): void {
-    const newType = <span class="cstat-no" title="statement not covered" >this.currentState.cameraType === CameraType.front </span>
-      ? CameraType.back 
-      : CameraType.front;
+    const newType = <span class="cstat-no" title="statement not covered" >this.currentState.cameraType === 'front' </span>
+      ? 'back' 
+      : 'front';
     
 <span class="cstat-no" title="statement not covered" >    this.updateState({ cameraType: newType });</span>
   }
 &nbsp;
   // Toggle flash
 <span class="fstat-no" title="function not covered" >  to</span>ggleFlash(): void {
-    const newFlash = <span class="cstat-no" title="statement not covered" >this.currentState.flashMode === FlashMode.off </span>
-      ? FlashMode.on 
-      : FlashMode.off;
+    const newFlash = <span class="cstat-no" title="statement not covered" >this.currentState.flashMode === 'off' </span>
+      ? 'on' 
+      : 'off';
     
 <span class="cstat-no" title="statement not covered" >    this.updateState({ flashMode: newFlash });</span>
   }
@@ -1147,7 +1132,7 @@ export const videoRecordingService = <span class="cstat-no" title="statement not
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-07-05T23:45:20.019Z
+                at 2025-07-09T16:21:30.506Z
             </div>
         <script src="../prettify.js"></script>
         <script>

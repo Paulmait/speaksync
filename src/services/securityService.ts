@@ -169,14 +169,60 @@ class SecurityService {
   }
 
   private isEmulator(): boolean {
-    // Basic emulator detection for beta testing
-    return Platform.OS === 'ios' && __DEV__;
+    // Detect emulator/simulator environment
+    if (__DEV__) {
+      return true; // Development mode indicates emulator/simulator
+    }
+
+    // Platform-specific checks
+    if (Platform.OS === 'android') {
+      // Check for common Android emulator indicators
+      const brand = Platform.constants?.Brand?.toLowerCase() || '';
+      const model = Platform.constants?.Model?.toLowerCase() || '';
+      return brand.includes('google') || model.includes('sdk') || model.includes('emulator');
+    }
+
+    return false;
   }
 
   private async isJailbroken(): Promise<boolean> {
-    // Basic jailbreak detection for beta testing
-    // In production, this would use more sophisticated detection
-    return false; // Assume not jailbroken for beta testing
+    // Basic jailbreak/root detection
+    // For comprehensive detection, consider using react-native-jail-monkey or similar
+
+    if (Platform.OS === 'ios') {
+      // iOS: Check for common jailbreak indicators
+      // Note: This is basic detection; dedicated libraries provide better coverage
+      try {
+        // Check if we're in development (simulator)
+        if (__DEV__) return false;
+
+        // In production, this would check for:
+        // - Cydia app existence
+        // - Writing to /private/ directories
+        // - Suspicious binaries
+        // For now, return false as a placeholder
+        return false;
+      } catch {
+        return false;
+      }
+    }
+
+    if (Platform.OS === 'android') {
+      // Android: Check for common root indicators
+      try {
+        if (__DEV__) return false;
+
+        // In production, this would check for:
+        // - su binary existence
+        // - Root management apps (SuperSU, Magisk)
+        // - Modified system partitions
+        return false;
+      } catch {
+        return false;
+      }
+    }
+
+    return false;
   }
 
   private setupNetworkMonitoring(): void {
@@ -231,8 +277,25 @@ class SecurityService {
   }
 
   public async validateSession(): Promise<boolean> {
-    // For beta testing, always return true
-    // In production, this would check session validity
+    // Check if user is authenticated with Firebase
+    const { auth } = await import('./firebase');
+    const user = auth.currentUser;
+
+    if (!user) {
+      return false;
+    }
+
+    // Check session age - require re-auth after timeout period
+    const lastSignInTime = user.metadata.lastSignInTime;
+    if (lastSignInTime) {
+      const sessionAge = Date.now() - new Date(lastSignInTime).getTime();
+      const maxSessionAge = this.securityConfig.sessionTimeout * 60 * 1000; // Convert to ms
+
+      if (sessionAge > maxSessionAge) {
+        return false;
+      }
+    }
+
     return true;
   }
 

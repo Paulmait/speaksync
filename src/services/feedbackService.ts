@@ -233,7 +233,8 @@ class FeedbackService {
     try {
       // This would need a native module to get real memory info
       return { used: 100, total: 1000 }; // Mock values in MB
-    } catch {
+    } catch (error) {
+      console.warn('Failed to get memory usage:', error);
       return { used: 0, total: 0 };
     }
   }
@@ -241,11 +242,12 @@ class FeedbackService {
   private async getDiskSpace(): Promise<{ free: number; total: number }> {
     try {
       // Mock values since we removed DeviceInfo dependency
-      return { 
+      return {
         free: 1000, // MB
         total: 4000 // MB
       };
-    } catch {
+    } catch (error) {
+      console.warn('Failed to get disk space:', error);
       return { free: 0, total: 0 };
     }
   }

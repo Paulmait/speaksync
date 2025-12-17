@@ -3,9 +3,14 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Add aliases for common dependencies
+// Add aliases for Node.js built-ins and common dependencies
 config.resolver.alias = {
-  stream: 'readable-stream',
+  stream: 'stream-browserify',
+};
+
+// Extra node modules for polyfilling
+config.resolver.extraNodeModules = {
+  stream: require.resolve('stream-browserify'),
 };
 
 // Add resolver configuration for proper module resolution

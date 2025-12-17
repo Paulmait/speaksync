@@ -46,17 +46,20 @@ export default {
         // Background modes for audio
         UIBackgroundModes: ["audio"],
 
-        // App Transport Security - Allow secure connections
+        // App Transport Security - Enforce TLS 1.2+ with Forward Secrecy
         NSAppTransportSecurity: {
           NSAllowsArbitraryLoads: false,
+          NSAllowsLocalNetworking: false,
           NSExceptionDomains: {
             "firebaseio.com": {
               NSIncludesSubdomains: true,
-              NSThirdPartyExceptionRequiresForwardSecrecy: false
+              NSExceptionRequiresForwardSecrecy: true,
+              NSExceptionMinimumTLSVersion: "TLSv1.2"
             },
             "googleapis.com": {
               NSIncludesSubdomains: true,
-              NSThirdPartyExceptionRequiresForwardSecrecy: false
+              NSExceptionRequiresForwardSecrecy: true,
+              NSExceptionMinimumTLSVersion: "TLSv1.2"
             }
           }
         },
@@ -114,6 +117,10 @@ export default {
       package: "com.speaksync.mobile",
       versionCode: 1,
       edgeToEdgeEnabled: true,
+
+      // Security settings
+      allowBackup: false, // Prevent backup of sensitive data
+      usesCleartextTraffic: false, // Force HTTPS only
 
       // Required permissions
       permissions: [
@@ -174,7 +181,8 @@ export default {
           isAccessMediaLocationEnabled: true
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-secure-store"
     ],
 
     // Updates configuration

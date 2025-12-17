@@ -22,7 +22,8 @@
       "Bash(eas build:*)",
       "Bash(eas update:configure:*)",
       "Bash(eas credentials:*)",
-      "Bash(eas build:configure:*)"
+      "Bash(eas build:configure:*)",
+      "Bash(npx expo export:*)"
     ]
   }
 }

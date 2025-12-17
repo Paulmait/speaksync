@@ -188,24 +188,24 @@ export class KaraokeService {
    * Levenshtein distance-based similarity (0-1 scale)
    */
   private levenshteinSimilarity(a: string, b: string): number {
-    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+    const matrix: number[][] = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(0));
 
-    for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+    for (let i = 0; i <= a.length; i++) matrix[0]![i] = i;
+    for (let j = 0; j <= b.length; j++) matrix[j]![0] = j;
 
     for (let j = 1; j <= b.length; j++) {
       for (let i = 1; i <= a.length; i++) {
-        const substitution = matrix[j - 1][i - 1] + (a[i - 1] === b[j - 1] ? 0 : 1);
-        matrix[j][i] = Math.min(
-          matrix[j][i - 1] + 1, // insertion
-          matrix[j - 1][i] + 1, // deletion
+        const substitution = (matrix[j - 1]![i - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1);
+        matrix[j]![i] = Math.min(
+          (matrix[j]![i - 1] ?? 0) + 1, // insertion
+          (matrix[j - 1]![i] ?? 0) + 1, // deletion
           substitution
         );
       }
     }
 
     const maxLength = Math.max(a.length, b.length);
-    return maxLength === 0 ? 1 : 1 - matrix[b.length][a.length] / maxLength;
+    return maxLength === 0 ? 1 : 1 - (matrix[b.length]![a.length] ?? 0) / maxLength;
   }
 
   /**
@@ -264,13 +264,16 @@ export class KaraokeService {
     const clean = word.toUpperCase().replace(/[^A-Z]/g, '');
     if (clean.length === 0) return '0000';
 
-    let soundex = clean[0];
-    const codes = { B: '1', F: '1', P: '1', V: '1', C: '2', G: '2', J: '2', K: '2', Q: '2', S: '2', X: '2', Z: '2', D: '3', T: '3', L: '4', M: '5', N: '5', R: '6' };
+    let soundex = clean[0]!;
+    const codes: Record<string, string> = { B: '1', F: '1', P: '1', V: '1', C: '2', G: '2', J: '2', K: '2', Q: '2', S: '2', X: '2', Z: '2', D: '3', T: '3', L: '4', M: '5', N: '5', R: '6' };
 
     for (let i = 1; i < clean.length && soundex.length < 4; i++) {
-      const code = codes[clean[i] as keyof typeof codes];
-      if (code && code !== soundex[soundex.length - 1]) {
-        soundex += code;
+      const char = clean[i];
+      if (char) {
+        const code = codes[char];
+        if (code && code !== soundex[soundex.length - 1]) {
+          soundex += code;
+        }
       }
     }
 

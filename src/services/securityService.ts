@@ -137,11 +137,23 @@ class SecurityService {
   }
 
   private async getDeviceInfo(): Promise<SecurityAudit['deviceInfo']> {
+    // Import secure storage service for cryptographic random
+    const { secureStorageService } = await import('./secureStorageService');
+
+    // Generate or retrieve a persistent secure device ID
+    let deviceId = await secureStorageService.getSecureItem('device_unique_id');
+    if (!deviceId) {
+      deviceId = await secureStorageService.generateSecureUUID();
+      await secureStorageService.setSecureItem('device_unique_id', deviceId);
+    }
+
     return {
       platform: Platform.OS,
       version: Platform.Version?.toString() || 'unknown',
-      model: 'unknown', // For privacy in beta testing
-      uniqueId: `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      model: Platform.OS === 'android'
+        ? (Platform.constants?.Model || 'unknown')
+        : 'unknown',
+      uniqueId: deviceId
     };
   }
 
@@ -289,7 +301,7 @@ class SecurityService {
     const lastSignInTime = user.metadata.lastSignInTime;
     if (lastSignInTime) {
       const sessionAge = Date.now() - new Date(lastSignInTime).getTime();
-      const maxSessionAge = this.securityConfig.sessionTimeout * 60 * 1000; // Convert to ms
+      const maxSessionAge = this.config.sessionTimeout * 60 * 1000; // Convert to ms
 
       if (sessionAge > maxSessionAge) {
         return false;

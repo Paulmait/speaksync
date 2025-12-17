@@ -746,7 +746,10 @@ export default function TeleprompterScreen() {
         const currentParagraph = Object.keys(paragraphRefs.current)
           .map(Number)
           .reverse()
-          .find(index => scrollPositionRef.current >= paragraphRefs.current[index]) || 0;
+          .find(index => {
+            const ref = paragraphRefs.current[index];
+            return ref !== undefined && scrollPositionRef.current >= ref;
+          }) || 0;
         
         setState(prev => ({ ...prev, currentParagraph, currentPosition: scrollPositionRef.current }));
       }, 50) as any;

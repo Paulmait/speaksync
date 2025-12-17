@@ -267,7 +267,8 @@ export class SyncService {
       if (!data) return [];
       const parsed = JSON.parse(data);
       return parsed.state?.scripts || [];
-    } catch {
+    } catch (error) {
+      console.warn('Failed to get local scripts:', error);
       return [];
     }
   }

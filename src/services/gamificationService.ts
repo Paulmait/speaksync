@@ -561,9 +561,10 @@ class GamificationService {
 
   private async updateWeeklyGoals(sessionReport: SessionSummaryReport): Promise<void> {
     const currentWeek = this.getWeekStart(new Date());
-    
+
     // Check if we need new goals for this week
-    if (this.weeklyGoals.length === 0 || this.weeklyGoals[0].weekStart < currentWeek) {
+    const firstGoal = this.weeklyGoals[0];
+    if (this.weeklyGoals.length === 0 || (firstGoal && firstGoal.weekStart < currentWeek)) {
       this.weeklyGoals = this.generateWeeklyGoals();
     }
 

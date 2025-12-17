@@ -15,6 +15,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { LoggingService } from './loggingService';
 import {
   SessionReport,
   AnalyticsFilters,
@@ -27,6 +28,8 @@ import {
 } from '../types';
 
 class AnalyticsService {
+  private logger = LoggingService.getInstance();
+
   // Session Management
   async createSession(
     scriptId: string,
@@ -45,8 +48,9 @@ class AnalyticsService {
 
       const sessionRef = await addDoc(collection(db, 'sessions'), sessionData);
       return sessionRef.id;
-    } catch {
-      throw new Error('Failed to create session');
+    } catch (error) {
+      this.logger.error('Failed to create session', error instanceof Error ? error : new Error(String(error)));
+      throw new Error(`Failed to create session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -73,8 +77,9 @@ class AnalyticsService {
         status: 'completed',
         updatedAt: serverTimestamp(),
       });
-    } catch {
-      throw new Error('Failed to end session');
+    } catch (error) {
+      this.logger.error('Failed to end session', error instanceof Error ? error : new Error(String(error)), { sessionId });
+      throw new Error(`Failed to end session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -94,8 +99,9 @@ class AnalyticsService {
         realTimeMetrics,
         lastUpdated: serverTimestamp(),
       });
-    } catch {
-      // Don't throw error for real-time updates
+    } catch (error) {
+      // Don't throw error for real-time updates, but log for debugging
+      this.logger.warn('Failed to update session metrics', { sessionId, error: String(error) });
     }
   }
 
@@ -133,8 +139,9 @@ class AnalyticsService {
       });
 
       return sessions;
-    } catch {
-      throw new Error('Failed to get sessions');
+    } catch (error) {
+      this.logger.error('Failed to get sessions', error instanceof Error ? error : new Error(String(error)), { userId });
+      throw new Error(`Failed to get sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -154,16 +161,18 @@ class AnalyticsService {
         endTime: data['endTime']?.toDate() || new Date(),
         createdAt: data['createdAt']?.toDate() || new Date(),
       } as SessionReport;
-    } catch {
-      throw new Error('Failed to get session');
+    } catch (error) {
+      this.logger.error('Failed to get session', error instanceof Error ? error : new Error(String(error)), { sessionId });
+      throw new Error(`Failed to get session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   async deleteSession(sessionId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'sessions', sessionId));
-    } catch {
-      throw new Error('Failed to delete session');
+    } catch (error) {
+      this.logger.error('Failed to delete session', error instanceof Error ? error : new Error(String(error)), { sessionId });
+      throw new Error(`Failed to delete session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -243,8 +252,9 @@ class AnalyticsService {
         },
         weeklyStats,
       };
-    } catch {
-      throw new Error('Failed to get analytics summary');
+    } catch (error) {
+      this.logger.error('Failed to get analytics summary', error instanceof Error ? error : new Error(String(error)), { userId });
+      throw new Error(`Failed to get analytics summary: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -316,8 +326,9 @@ class AnalyticsService {
         insights,
         recommendations,
       };
-    } catch {
-      throw new Error('Failed to compare sessions');
+    } catch (error) {
+      this.logger.error('Failed to compare sessions', error instanceof Error ? error : new Error(String(error)), { sessionCount: sessionIds.length });
+      throw new Error(`Failed to compare sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -346,8 +357,9 @@ class AnalyticsService {
         default:
           throw new Error('Unsupported export format');
       }
-    } catch {
-      throw new Error('Failed to export sessions');
+    } catch (error) {
+      this.logger.error('Failed to export sessions', error instanceof Error ? error : new Error(String(error)), { userId, format: options.format });
+      throw new Error(`Failed to export sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -366,7 +378,7 @@ class AnalyticsService {
         callback(doc.data() as SessionReport);
       },
       (error) => {
-        // Removed unused variable 'error'
+        this.logger.error('Session subscription error', error, { sessionId });
       }
     );
   }

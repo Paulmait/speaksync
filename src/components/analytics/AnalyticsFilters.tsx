@@ -11,11 +11,11 @@ import {
   Card,
 } from 'react-native-paper';
 import DatePicker from 'react-native-date-picker';
-import { AnalyticsFilters } from '../../types';
+import { AnalyticsFilters as AnalyticsFiltersType } from '../../types';
 
 interface AnalyticsFiltersProps {
-  currentFilters: AnalyticsFilters;
-  onApplyFilters: (filters: AnalyticsFilters) => void;
+  currentFilters: AnalyticsFiltersType;
+  onApplyFilters: (filters: AnalyticsFiltersType) => void;
   onClose: () => void;
 }
 
@@ -24,7 +24,7 @@ export function AnalyticsFilters({
   onApplyFilters,
   onClose,
 }: AnalyticsFiltersProps) {
-  const [filters, setFilters] = useState<AnalyticsFilters>(currentFilters);
+  const [filters, setFilters] = useState<AnalyticsFiltersType>(currentFilters);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 

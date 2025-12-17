@@ -93,7 +93,9 @@
     "readable-stream": "^4.7.0",
     "ws": "^8.18.3",
     "zustand": "^5.0.6",
-    "react-native-get-random-values": "~1.11.0"
+    "react-native-get-random-values": "~1.11.0",
+    "expo-localization": "~16.1.6",
+    "expo-updates": "~0.28.17"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

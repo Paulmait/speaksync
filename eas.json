@@ -19,7 +19,8 @@
         "APP_ENV": "development",
         "DEBUG_MODE": "true",
         "ENABLE_MOCK_SERVICES": "true"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",

@@ -11,7 +11,18 @@
       "Bash(npx expo-doctor)",
       "Bash(npx expo install:*)",
       "Bash(timeout 30 npx expo start:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Comprehensive QC audit for production readiness\n\nSECURITY FIXES:\n- Deleted .env.example.backup containing exposed API keys (CRITICAL)\n- Created proper .env.example with placeholder values\n- Removed yarn.lock to prevent package manager conflicts\n\nTYPESCRIPT FIXES:\n- Fixed SubscriptionManager.tsx: corrected feature flag names to match FeatureFlags enum\n- Fixed KaraokeText.tsx: added null checks for array indexing\n- Fixed TeleprompterScreen.tsx: replaced stub with actual adaptiveScrollService import\n- Fixed bleRemoteService.ts: corrected timeout type definition\n- Updated tsconfig.json: relaxed strictest settings while maintaining type safety\n- Excluded separate projects (speaksync-web, e2e) from main TypeScript check\n\nDEPENDENCY UPDATES:\n- Removed deprecated expo-permissions package\n- Installed missing peer dependency react-native-get-random-values\n- Fixed npm audit vulnerabilities (down to 4 dev-only)\n- Updated jest.config.json for cleaner configuration\n\nDOCUMENTATION:\n- Created FUTURE_ENHANCEMENTS.md with comprehensive roadmap\n- Covers architecture, enhancements, technical debt, and maintenance guidelines\n\nAPP STATUS: Production ready (95%)\n- Core functionality complete\n- Security hardened\n- Expo starts and bundles successfully\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(git commit:*)",
+      "Bash(npx eas whoami)",
+      "Bash(npm install:*)",
+      "Bash(eas whoami:*)",
+      "Bash(eas build:*)",
+      "Bash(eas update:configure:*)",
+      "Bash(eas credentials:*)",
+      "Bash(eas build:configure:*)"
     ]
   }
 }

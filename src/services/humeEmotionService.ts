@@ -240,7 +240,7 @@ class HumeEmotionService {
       neutral: { emoji: '😐', color: '#9CA3AF', description: 'Neutral' },
     };
 
-    const indicator = emotionMap[emotion] || emotionMap.neutral;
+    const indicator = emotionMap[emotion] || emotionMap['neutral'];
 
     return {
       ...indicator,
@@ -327,7 +327,7 @@ class HumeEmotionService {
 
   // Get API key from environment
   static getApiKey(): string {
-    return process.env.EXPO_PUBLIC_HUME_API_KEY || '';
+    return process.env['EXPO_PUBLIC_HUME_API_KEY'] || '';
   }
 }
 

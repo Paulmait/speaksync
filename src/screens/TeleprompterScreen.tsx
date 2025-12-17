@@ -53,31 +53,10 @@ import GeminiAiService from '../services/geminiAiService';
 import EmotionIndicator from '../components/EmotionIndicator';
 import AiSuggestionPanel from '../components/AiSuggestionPanel';
 import { PerformanceOptimizer } from '../services/performanceOptimizer';
+import { adaptiveScrollService } from '../services/adaptiveScrollService';
 
 // Initialize performance optimizer
 const performanceOptimizer = PerformanceOptimizer.getInstance();
-
-// Import the adaptive scroll service - create temporary instance for now
-const adaptiveScrollService = {
-  initialize: () => {},
-  getScrollState: () => ({
-    currentPosition: 0,
-    velocity: 0,
-    isAutoScrolling: false,
-    lastUpdateTime: Date.now(),
-    targetPosition: 0,
-    acceleration: 0,
-    adaptiveSpeed: 1,
-    isUserControlled: false,
-    smoothingBuffer: []
-  }),
-  stop: () => {},
-  processWordTiming: () => {},
-  start: () => {},
-  reset: () => {},
-  setUserScrollPosition: () => {},
-  updateSettings: () => {},
-};
 import { 
   RootStackParamList, 
   TeleprompterSettings, 
@@ -741,7 +720,7 @@ export default function TeleprompterScreen() {
       if (isFullscreen) {
         setShowControls(false);
       }
-    }, 3000);
+    }, 3000) as any;
   }, [isFullscreen]);
 
   const startAutoScroll = useCallback(() => {
@@ -770,7 +749,7 @@ export default function TeleprompterScreen() {
           .find(index => scrollPositionRef.current >= paragraphRefs.current[index]) || 0;
         
         setState(prev => ({ ...prev, currentParagraph, currentPosition: scrollPositionRef.current }));
-      }, 50);
+      }, 50) as any;
     }
   }, [settings.speed, adaptiveScrollSettings.enabled, scriptAnalysis]);
 
@@ -1192,7 +1171,7 @@ export default function TeleprompterScreen() {
           setShowUpgradeModal(true);
         }}
         onUpgrade={() => {
-          navigation.navigate('Subscription');
+          navigation.navigate('Subscription' as never);
         }}
       />
       
@@ -1234,7 +1213,7 @@ export default function TeleprompterScreen() {
             const currentParagraph = Object.keys(paragraphRefs.current)
               .map(Number)
               .reverse()
-              .find(index => y >= paragraphRefs.current[index]) || 0;
+              .find(index => y >= (paragraphRefs.current?.[index] || 0)) || 0;
             
             setState(prev => ({ 
               ...prev, 

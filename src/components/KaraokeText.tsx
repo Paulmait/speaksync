@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Animated,
   LayoutChangeEvent,
-  ScrollView,
 } from 'react-native';
 import { KaraokeState, ScriptAnalysis, KaraokeHighlightSettings, TeleprompterSettings } from '../types';
 
@@ -40,7 +39,6 @@ export const KaraokeText: React.FC<KaraokeTextProps> = ({
   onWordLayout,
   onScrollRequest,
 }) => {
-  const scrollViewRef = useRef<ScrollView>(null);
   const wordLayoutsRef = useRef<Map<number, WordLayoutInfo>>(new Map());
   const highlightAnimationsRef = useRef<Map<number, Animated.Value>>(new Map());
   const containerRef = useRef<View>(null);
@@ -58,11 +56,13 @@ export const KaraokeText: React.FC<KaraokeTextProps> = ({
   useEffect(() => {
     if (settings.autoScroll && karaokeState.highlightedWords.length > 0) {
       const wordIndex = karaokeState.highlightedWords[0];
-      const layout = wordLayoutsRef.current.get(wordIndex);
-      
-      if (layout && onScrollRequest) {
-        const scrollY = Math.max(0, layout.y - settings.scrollOffset);
-        onScrollRequest(scrollY);
+      if (wordIndex !== undefined) {
+        const layout = wordLayoutsRef.current.get(wordIndex);
+
+        if (layout && onScrollRequest) {
+          const scrollY = Math.max(0, layout.y - (settings.scrollOffset ?? 100));
+          onScrollRequest(scrollY);
+        }
       }
     }
   }, [karaokeState.highlightedWords, settings.autoScroll, settings.scrollOffset, onScrollRequest]);
@@ -226,7 +226,7 @@ interface KaraokeWordProps {
 
 const KaraokeWord: React.FC<KaraokeWordProps> = React.memo(({
   word,
-  wordIndex,
+  wordIndex: _wordIndex,
   isHighlighted,
   isCurrent,
   settings,

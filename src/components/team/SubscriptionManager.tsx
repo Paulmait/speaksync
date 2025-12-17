@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import {
   Card,
   Title,
@@ -17,6 +17,8 @@ import {
 } from 'react-native-paper';
 import { SubscriptionTier, FeatureFlags } from '../../types/subscriptionTypes';
 import { subscriptionService } from '../../services';
+
+type FeatureName = keyof FeatureFlags;
 
 interface SubscriptionManagerProps {
   userId: string;
@@ -159,23 +161,23 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   };
 
   const renderFeatureStatus = (feature: FeatureName, label: string) => {
-    const featureGate = subscriptionService.checkFeature(feature, subscription);
+    const isEnabled = subscriptionService.checkFeature(feature, subscription);
     return (
       <List.Item
         title={label}
         left={() => (
           <List.Icon
-            icon={featureGate.enabled ? 'check-circle' : 'close-circle'}
-            color={featureGate.enabled ? theme.colors.primary : theme.colors.outline}
+            icon={isEnabled ? 'check-circle' : 'close-circle'}
+            color={isEnabled ? theme.colors.primary : theme.colors.outline}
           />
         )}
         right={() => (
-          !featureGate.enabled && (
+          !isEnabled && (
             <Button
               mode="text"
               compact
               onPress={() => {
-                setSelectedTier('business');
+                setSelectedTier(SubscriptionTier.STUDIO);
                 setUpgradeDialogVisible(true);
               }}
             >
@@ -183,7 +185,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             </Button>
           )
         )}
-        description={featureGate.enabled ? 'Available' : featureGate.reason}
+        description={isEnabled ? 'Available' : 'Upgrade required'}
       />
     );
   };
@@ -324,13 +326,13 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
         <Card.Content>
           <Title style={styles.sectionTitle}>Features</Title>
           <View style={styles.featuresContainer}>
-            {renderFeatureStatus('team_collaboration', 'Team Collaboration')}
-            {renderFeatureStatus('advanced_analytics', 'Advanced Analytics')}
-            {renderFeatureStatus('priority_support', 'Priority Support')}
-            {renderFeatureStatus('custom_branding', 'Custom Branding')}
-            {renderFeatureStatus('api_access', 'API Access')}
-            {renderFeatureStatus('bulk_export', 'Bulk Export')}
-            {renderFeatureStatus('integrations', 'Integrations')}
+            {renderFeatureStatus('teamCollaboration', 'Team Collaboration')}
+            {renderFeatureStatus('analytics', 'Advanced Analytics')}
+            {renderFeatureStatus('prioritySupport', 'Priority Support')}
+            {renderFeatureStatus('customThemes', 'Custom Themes')}
+            {renderFeatureStatus('exportVideo', 'Video Export')}
+            {renderFeatureStatus('aiFeedback', 'AI Feedback')}
+            {renderFeatureStatus('multiDeviceSync', 'Multi-Device Sync')}
           </View>
         </Card.Content>
       </Card>
@@ -389,8 +391,8 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             </Paragraph>
             
             <View style={styles.tierOptions}>
-              {(['personal', 'business', 'enterprise'] as SubscriptionTier[])
-                .filter(tier => tier !== subscription.tier)
+              {([SubscriptionTier.PRO, SubscriptionTier.STUDIO] as SubscriptionTier[])
+                .filter(tier => tier !== subscription?.subscriptionTier)
                 .map((tier) => (
                 <Card
                   key={tier}
@@ -412,7 +414,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                         style={[styles.tierPriceChip, { backgroundColor: getTierColor(tier) }]}
                         textStyle={{ color: theme.colors.onPrimary }}
                       >
-                        ${tier === 'personal' ? '9.99' : tier === 'business' ? '29.99' : '99.99'}/mo
+                        ${tier === SubscriptionTier.PRO ? '9.99' : '29.99'}/mo
                       </Chip>
                     </View>
                     <View style={styles.tierFeatures}>

@@ -47,7 +47,11 @@
         "buildType": "apk"
       },
       "env": {
-        "APP_ENV": "testing"
+        "APP_ENV": "testing",
+        "BETA_TESTING_MODE": "true",
+        "ENABLE_MOCK_SERVICES": "false",
+        "ENABLE_API_KEY_VALIDATION": "true",
+        "ENABLE_ENVIRONMENT_CHECK": "true"
       }
     },
     "testflight": {

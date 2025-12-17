@@ -55,7 +55,7 @@ class BLERemoteService {
   private listeners: Array<(state: BLERemoteState) => void> = [];
   private commandListeners: Array<(command: RemoteCommand) => void> = [];
   private buttonMappings: Map<string, ButtonMapping> = new Map();
-  private scanTimeout: NodeJS.Timeout | null = null;
+  private scanTimeout: ReturnType<typeof setTimeout> | null = null;
   
   private currentState: BLERemoteState = {
     isScanning: false,
@@ -100,8 +100,8 @@ class BLERemoteService {
       }
 
       // Initialize native BLE module
-      if (NativeModules.BLERemoteModule) {
-        await NativeModules.BLERemoteModule.initialize();
+      if (NativeModules['BLERemoteModule']) {
+        await NativeModules['BLERemoteModule'].initialize();
       }
 
       // Set up event listeners
@@ -145,8 +145,8 @@ class BLERemoteService {
   // Check if Bluetooth is enabled
   private async checkBluetoothEnabled(): Promise<boolean> {
     try {
-      if (NativeModules.BLERemoteModule?.isBluetoothEnabled) {
-        return await NativeModules.BLERemoteModule.isBluetoothEnabled();
+      if (NativeModules['BLERemoteModule']?.isBluetoothEnabled) {
+        return await NativeModules['BLERemoteModule'].isBluetoothEnabled();
       }
       return false;
     } catch (error) {
@@ -209,8 +209,8 @@ class BLERemoteService {
       });
 
       // Start BLE scan with HID device filter
-      if (NativeModules.BLERemoteModule?.startScan) {
-        await NativeModules.BLERemoteModule.startScan({
+      if (NativeModules['BLERemoteModule']?.startScan) {
+        await NativeModules['BLERemoteModule'].startScan({
           serviceUUIDs: [
             '00001812-0000-1000-8000-00805f9b34fb', // HID Service UUID
             '0000180f-0000-1000-8000-00805f9b34fb', // Battery Service UUID
@@ -244,8 +244,8 @@ class BLERemoteService {
         this.scanTimeout = null;
       }
 
-      if (NativeModules.BLERemoteModule?.stopScan) {
-        await NativeModules.BLERemoteModule.stopScan();
+      if (NativeModules['BLERemoteModule']?.stopScan) {
+        await NativeModules['BLERemoteModule'].stopScan();
       }
     } catch (error) {
       console.error('Failed to stop BLE scanning:', error);
@@ -257,8 +257,8 @@ class BLERemoteService {
     try {
       this.updateState({ error: null });
 
-      if (NativeModules.BLERemoteModule?.connect) {
-        const success = await NativeModules.BLERemoteModule.connect(deviceId);
+      if (NativeModules['BLERemoteModule']?.connect) {
+        const success = await NativeModules['BLERemoteModule'].connect(deviceId);
         
         if (success) {
           // Device connection will be handled by event listener
@@ -280,8 +280,8 @@ class BLERemoteService {
   // Disconnect from a BLE device
   async disconnectFromDevice(deviceId: string): Promise<boolean> {
     try {
-      if (NativeModules.BLERemoteModule?.disconnect) {
-        const success = await NativeModules.BLERemoteModule.disconnect(deviceId);
+      if (NativeModules['BLERemoteModule']?.disconnect) {
+        const success = await NativeModules['BLERemoteModule'].disconnect(deviceId);
         
         if (success) {
           // Remove from connected devices

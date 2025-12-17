@@ -80,8 +80,8 @@ class ExternalDisplayService {
     // This would require a native iOS module
     try {
       // Check if UIScene multiple window support is available (iOS 13+)
-      if (NativeModules.ExternalDisplayModule) {
-        await NativeModules.ExternalDisplayModule.initialize();
+      if (NativeModules['ExternalDisplayModule']) {
+        await NativeModules['ExternalDisplayModule'].initialize();
       }
     } catch (error) {
       console.warn('iOS external display module not available:', error);
@@ -93,8 +93,8 @@ class ExternalDisplayService {
     // This would require a native Android module
     try {
       // Initialize Android Presentation API for secondary displays
-      if (NativeModules.ExternalDisplayModule) {
-        await NativeModules.ExternalDisplayModule.initialize();
+      if (NativeModules['ExternalDisplayModule']) {
+        await NativeModules['ExternalDisplayModule'].initialize();
       }
     } catch (error) {
       console.warn('Android external display module not available:', error);
@@ -145,8 +145,8 @@ class ExternalDisplayService {
     const displays: ExternalDisplay[] = [];
 
     try {
-      if (NativeModules.ExternalDisplayModule?.getWiredDisplays) {
-        const nativeDisplays = await NativeModules.ExternalDisplayModule.getWiredDisplays();
+      if (NativeModules['ExternalDisplayModule']?.getWiredDisplays) {
+        const nativeDisplays = await NativeModules['ExternalDisplayModule'].getWiredDisplays();
         
         for (const display of nativeDisplays) {
           displays.push({
@@ -195,8 +195,8 @@ class ExternalDisplayService {
     const displays: ExternalDisplay[] = [];
 
     try {
-      if (NativeModules.GoogleCastModule?.discoverDevices) {
-        const devices = await NativeModules.GoogleCastModule.discoverDevices();
+      if (NativeModules['GoogleCastModule']?.discoverDevices) {
+        const devices = await NativeModules['GoogleCastModule'].discoverDevices();
         
         for (const device of devices) {
           displays.push({
@@ -224,8 +224,8 @@ class ExternalDisplayService {
     const displays: ExternalDisplay[] = [];
 
     try {
-      if (Platform.OS === 'ios' && NativeModules.AirPlayModule?.discoverDevices) {
-        const devices = await NativeModules.AirPlayModule.discoverDevices();
+      if (Platform.OS === 'ios' && NativeModules['AirPlayModule']?.discoverDevices) {
+        const devices = await NativeModules['AirPlayModule'].discoverDevices();
         
         for (const device of devices) {
           displays.push({
@@ -279,8 +279,8 @@ class ExternalDisplayService {
     options: TeleprompterDisplayOptions
   ): Promise<boolean> {
     try {
-      if (NativeModules.ExternalDisplayModule?.connectWiredDisplay) {
-        const success = await NativeModules.ExternalDisplayModule.connectWiredDisplay(
+      if (NativeModules['ExternalDisplayModule']?.connectWiredDisplay) {
+        const success = await NativeModules['ExternalDisplayModule'].connectWiredDisplay(
           display.id,
           {
             mirrorHorizontally: options.mirrorHorizontally,
@@ -343,8 +343,8 @@ class ExternalDisplayService {
     options: TeleprompterDisplayOptions
   ): Promise<boolean> {
     try {
-      if (NativeModules.GoogleCastModule?.connect) {
-        return await NativeModules.GoogleCastModule.connect(display.id, {
+      if (NativeModules['GoogleCastModule']?.connect) {
+        return await NativeModules['GoogleCastModule'].connect(display.id, {
           appId: 'your-cast-app-id', // Custom receiver app for SpeakSync
           sessionData: {
             teleprompterOptions: options,
@@ -364,8 +364,8 @@ class ExternalDisplayService {
     options: TeleprompterDisplayOptions
   ): Promise<boolean> {
     try {
-      if (Platform.OS === 'ios' && NativeModules.AirPlayModule?.connect) {
-        return await NativeModules.AirPlayModule.connect(display.id, options);
+      if (Platform.OS === 'ios' && NativeModules['AirPlayModule']?.connect) {
+        return await NativeModules['AirPlayModule'].connect(display.id, options);
       }
       return false;
     } catch (error) {
@@ -385,8 +385,8 @@ class ExternalDisplayService {
       
       if (!currentDisplay) return;
 
-      if (isMirroring && NativeModules.ExternalDisplayModule?.updateContent) {
-        await NativeModules.ExternalDisplayModule.updateContent({
+      if (isMirroring && NativeModules['ExternalDisplayModule']?.updateContent) {
+        await NativeModules['ExternalDisplayModule'].updateContent({
           content: scriptContent,
           position: currentPosition,
           highlightedWords,
@@ -409,8 +409,8 @@ class ExternalDisplayService {
     currentPosition: number,
     highlightedWords?: number[]
   ): Promise<void> {
-    if (NativeModules.GoogleCastModule?.sendMessage) {
-      await NativeModules.GoogleCastModule.sendMessage({
+    if (NativeModules['GoogleCastModule']?.sendMessage) {
+      await NativeModules['GoogleCastModule'].sendMessage({
         type: 'UPDATE_CONTENT',
         data: {
           content: scriptContent,
@@ -428,8 +428,8 @@ class ExternalDisplayService {
     currentPosition: number,
     highlightedWords?: number[]
   ): Promise<void> {
-    if (Platform.OS === 'ios' && NativeModules.AirPlayModule?.updateContent) {
-      await NativeModules.AirPlayModule.updateContent({
+    if (Platform.OS === 'ios' && NativeModules['AirPlayModule']?.updateContent) {
+      await NativeModules['AirPlayModule'].updateContent({
         content: scriptContent,
         position: currentPosition,
         highlightedWords,
@@ -444,13 +444,13 @@ class ExternalDisplayService {
       
       if (!currentDisplay) return;
 
-      if (isMirroring && NativeModules.ExternalDisplayModule?.disconnect) {
-        await NativeModules.ExternalDisplayModule.disconnect();
+      if (isMirroring && NativeModules['ExternalDisplayModule']?.disconnect) {
+        await NativeModules['ExternalDisplayModule'].disconnect();
       } else if (isWirelessCasting) {
-        if (currentDisplay.technology === 'chromecast' && NativeModules.GoogleCastModule?.disconnect) {
-          await NativeModules.GoogleCastModule.disconnect();
-        } else if (currentDisplay.technology === 'airplay' && NativeModules.AirPlayModule?.disconnect) {
-          await NativeModules.AirPlayModule.disconnect();
+        if (currentDisplay.technology === 'chromecast' && NativeModules['GoogleCastModule']?.disconnect) {
+          await NativeModules['GoogleCastModule'].disconnect();
+        } else if (currentDisplay.technology === 'airplay' && NativeModules['AirPlayModule']?.disconnect) {
+          await NativeModules['AirPlayModule'].disconnect();
         }
       }
 

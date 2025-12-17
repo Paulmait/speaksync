@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm audit:*)",
+      "Bash(git status:*)",
+      "Bash(rm:*)",
+      "Bash(npm test:*)",
+      "Bash(npx expo doctor:*)",
+      "Bash(npx expo-doctor)",
+      "Bash(npx expo install:*)",
+      "Bash(timeout 30 npx expo start:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

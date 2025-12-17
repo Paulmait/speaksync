@@ -199,8 +199,8 @@ class MultiLanguageService {
   private constructor() {
     this.settings = {
       autoDetectLanguage: true,
-      defaultLanguage: SUPPORTED_LANGUAGES[0], // English
-      fallbackLanguage: SUPPORTED_LANGUAGES[0],
+      defaultLanguage: SUPPORTED_LANGUAGES[0] || { code: 'en', name: 'English', nativeName: 'English' },
+      fallbackLanguage: SUPPORTED_LANGUAGES[0] || { code: 'en', name: 'English', nativeName: 'English' },
       enableRTLSupport: true,
       showLanguageFlags: true,
       enableTranslationSuggestions: false
@@ -363,7 +363,7 @@ class MultiLanguageService {
 
     Object.keys(languagePatterns).forEach(langCode => {
       let score = 0;
-      const { words: commonWords, patterns } = languagePatterns[langCode];
+      const { words: commonWords, patterns } = languagePatterns[langCode] || { words: [], patterns: [] };
 
       // Score based on common words
       words.forEach(word => {

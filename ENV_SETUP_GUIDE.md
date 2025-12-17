@@ -14,10 +14,10 @@ The `.env` file contains your actual API keys and configuration. **This file sho
 # Environment Configuration for SpeakSync Mobile
 
 # Deepgram API Configuration
-DEEPGRAM_API_KEY=c1f6fab47dcb3ac00c275cf015e211782134ddc7
+DEEPGRAM_API_KEY=your_deepgram_api_key_here
 
 # Firebase Configuration - SpeakSyncMobile Project
-FIREBASE_API_KEY=AIzaSyB17iE1vMzqfyTMhjTnues5mq5R5BRLBe8
+FIREBASE_API_KEY=your_firebase_api_key_here
 FIREBASE_AUTH_DOMAIN=speaksyncmobile.firebaseapp.com
 FIREBASE_PROJECT_ID=speaksyncmobile
 FIREBASE_STORAGE_BUCKET=speaksyncmobile.appspot.com
@@ -51,7 +51,7 @@ The `app.config.js` file loads environment variables and makes them available to
 Your Firebase configuration has been extracted from the project settings:
 
 - **Project ID**: speaksyncmobile
-- **API Key**: AIzaSyB17iE1vMzqfyTMhjTnues5mq5R5BRLBe8
+- **API Key**: your_firebase_api_key_here
 - **Auth Domain**: speaksyncmobile.firebaseapp.com
 - **Storage Bucket**: speaksyncmobile.appspot.com
 - **Messaging Sender ID**: 738419715683

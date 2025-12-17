@@ -1,16 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import Constants from 'expo-constants';
+import { environmentService } from './environmentService';
 
-// Firebase configuration using Expo Constants
+// Firebase configuration using secure environment service
+const config = environmentService.getConfig();
 const firebaseConfig = {
-  apiKey: Constants.expoConfig?.extra?.['firebaseApiKey'] || "AIzaSyB17iE1vMzqfyTMhjTnues5mq5R5BRLBe8",
-  authDomain: Constants.expoConfig?.extra?.['firebaseAuthDomain'] || "speaksyncmobile.firebaseapp.com",
-  projectId: Constants.expoConfig?.extra?.['firebaseProjectId'] || "speaksyncmobile",
-  storageBucket: Constants.expoConfig?.extra?.['firebaseStorageBucket'] || "speaksyncmobile.appspot.com",
-  messagingSenderId: Constants.expoConfig?.extra?.['firebaseMessagingSenderId'] || "738419715683",
-  appId: Constants.expoConfig?.extra?.['firebaseAppId'] || "1:738419715683:web:your_app_id_here"
+  apiKey: config.firebaseApiKey,
+  authDomain: config.firebaseAuthDomain,
+  projectId: config.firebaseProjectId,
+  storageBucket: config.firebaseStorageBucket,
+  messagingSenderId: config.firebaseMessagingSenderId,
+  appId: config.firebaseAppId
 };
 
 // Initialize Firebase

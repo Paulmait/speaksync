@@ -493,11 +493,11 @@ export class AIEthicsService {
     // In practice, this would use more sophisticated cultural emotion mapping
     let biasRisk = 0;
     
-    if (culturalBackground === 'east_asian' && emotions.anger > 0.7) {
+    if (culturalBackground === 'east_asian' && emotions['anger'] && emotions['anger'] > 0.7) {
       biasRisk += 0.2; // May misinterpret cultural expression norms
     }
     
-    if (culturalBackground === 'latin' && emotions.joy < 0.3) {
+    if (culturalBackground === 'latin' && emotions['joy'] && emotions['joy'] < 0.3) {
       biasRisk += 0.1; // May under-detect positive emotions
     }
     
@@ -508,11 +508,11 @@ export class AIEthicsService {
     // Simplified gender bias assessment
     let biasRisk = 0;
     
-    if (gender === 'female' && emotions.assertiveness && emotions.assertiveness > 0.7) {
+    if (gender === 'female' && emotions['assertiveness'] && emotions['assertiveness'] > 0.7) {
       biasRisk += 0.2; // May misinterpret assertiveness as aggression
     }
     
-    if (gender === 'male' && emotions.sadness > 0.7) {
+    if (gender === 'male' && emotions['sadness'] && emotions['sadness'] > 0.7) {
       biasRisk += 0.1; // May under-detect emotional expression
     }
     

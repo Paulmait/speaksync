@@ -1,5 +1,6 @@
 import 'react-native-polyfill-globals/auto';
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { ErrorBoundary } from './src/components/error/ErrorBoundary';
 import { ErrorContextProvider } from './src/components/error/ErrorContextProvider';
 import { AccessibilityProvider } from './src/components/accessibility/AccessibilityProvider';
@@ -10,6 +11,9 @@ import { ErrorHandlingService } from './src/services/errorHandlingService';
 import { monitoringService } from './src/services/monitoringService';
 import { aiEthicsService } from './src/services/aiEthicsService';
 import { LoggingService } from './src/services/loggingService';
+import { environmentService } from './src/services/environmentService';
+import { betaTestingService } from './src/services/betaTestingService';
+import { securityService } from './src/services/securityService';
 import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
@@ -19,6 +23,23 @@ export default function App() {
       try {
         // Get logger instance first
         const logger = LoggingService.getInstance();
+        
+        // Initialize environment service first
+        logger.info('Initializing environment service');
+        const envConfig = environmentService.getConfig();
+        logger.info('Environment configuration loaded', {
+          betaMode: envConfig.betaTestingMode,
+          debugMode: envConfig.debugMode,
+          platform: Platform.OS
+        });
+        
+        // Initialize beta testing service
+        logger.info('Initializing beta testing service');
+        await betaTestingService.initialize();
+        
+        // Initialize security service
+        logger.info('Initializing security service');
+        await securityService.initialize();
         
         // Initialize monitoring and crash reporting
         logger.info('Initializing monitoring service');

@@ -201,9 +201,12 @@ class AnalyticsService {
       const scriptCounts: { [scriptId: string]: { count: number; title?: string } } = {};
       sessions.forEach(session => {
         if (!scriptCounts[session.scriptId]) {
-          scriptCounts[session.scriptId] = { count: 0, title: session.title || 'Untitled' };
+          scriptCounts[session.scriptId] = { 
+            count: 0, 
+            title: (session as any).title || 'Untitled' 
+          };
         }
-        scriptCounts[session.scriptId].count += 1; // Object is guaranteed to be defined here
+        scriptCounts[session.scriptId]!.count += 1; // Object is guaranteed to be defined here
       });
 
       const mostPracticedEntry = Object.entries(scriptCounts)
@@ -351,13 +354,13 @@ class AnalyticsService {
   // Real-time subscriptions
   subscribeToSession(
     sessionId: string,
-    callback: () => void // Updated to indicate unused parameter
+    callback: (session: SessionReport) => void
   ): Unsubscribe {
     return onSnapshot(
       doc(db, 'sessions', sessionId),
       (doc) => {
         if (!doc.exists()) {
-          callback();
+          callback({} as SessionReport); // Pass an empty object or a default structure
           return;
         }
         callback(doc.data() as SessionReport);

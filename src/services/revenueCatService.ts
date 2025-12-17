@@ -232,8 +232,8 @@ class RevenueCatService {
   // Get platform-specific API key
   static getPlatformApiKey(): string {
     return Platform.select({
-      ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || 'your_ios_api_key_here',
-      android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || 'your_android_api_key_here',
+      ios: process.env['EXPO_PUBLIC_REVENUECAT_IOS_API_KEY'] || 'your_ios_api_key_here',
+      android: process.env['EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY'] || 'your_android_api_key_here',
       default: 'your_default_api_key_here',
     });
   }

@@ -462,7 +462,7 @@ export class ErrorHandlingService {
       appVersion: '1.0.0', // Get from app config
       deviceInfo: await this.getDeviceInfo(),
       breadcrumbs: this.getBreadcrumbs(),
-      memoryUsage: await this.getMemoryUsage(),
+      memoryUsage: await this.getMemoryUsage() || undefined,
       isAutoSubmitted: this.config.autoSubmitCrashes
     };
 
@@ -609,7 +609,7 @@ export class ErrorHandlingService {
         isConnected: netInfo.isConnected || false,
         type: netInfo.type || 'unknown',
         isInternetReachable: netInfo.isInternetReachable || false,
-        details: netInfo.details || {}
+        details: netInfo.details || {} as Record<string, unknown>
       };
     } catch (error) {
       return null;

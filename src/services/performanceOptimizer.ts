@@ -137,7 +137,7 @@ export class PerformanceOptimizer {
       const callNow = immediate && !timeout;
       
       if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
+      timeout = setTimeout(later, wait) as any;
       
       if (callNow) func(...args);
     }) as T;
@@ -288,7 +288,7 @@ export class PerformanceOptimizer {
     // Simple noise gate
     const threshold = 0.01;
     for (let i = 0; i < length; i++) {
-      if (Math.abs(channelData[i]) < threshold) {
+      if (Math.abs(channelData[i] || 0) < threshold) {
         channelData[i] = 0;
       }
     }
@@ -296,13 +296,13 @@ export class PerformanceOptimizer {
     // Normalize audio levels
     let maxAmplitude = 0;
     for (let i = 0; i < length; i++) {
-      maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
+      maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i] || 0));
     }
     
     if (maxAmplitude > 0) {
       const normalizeGain = 0.8 / maxAmplitude;
       for (let i = 0; i < length; i++) {
-        channelData[i] *= normalizeGain;
+        channelData[i] = (channelData[i] || 0) * normalizeGain;
       }
     }
     

@@ -51,8 +51,8 @@ export class AuthService {
       userData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
-        displayName: data.displayName || firebaseUser.displayName || undefined,
-        createdAt: data.createdAt?.toDate() || new Date()
+        displayName: data['displayName'] || firebaseUser.displayName || undefined,
+        createdAt: data['createdAt']?.toDate() || new Date()
       };
     } else {
       // Create new user document

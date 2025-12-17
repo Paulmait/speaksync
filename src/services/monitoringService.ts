@@ -32,7 +32,7 @@ export class MonitoringService {
       providers: {
         sentry: {
           enabled: true,
-          dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
+          dsn: process.env['EXPO_PUBLIC_SENTRY_DSN'] || '',
           options: {
             debug: __DEV__,
             enableAutoSessionTracking: true,
@@ -59,8 +59,8 @@ export class MonitoringService {
         },
         datadog: {
           enabled: false, // Enable when configured
-          clientToken: process.env.EXPO_PUBLIC_DATADOG_CLIENT_TOKEN || '',
-          applicationId: process.env.EXPO_PUBLIC_DATADOG_APPLICATION_ID || '',
+          clientToken: process.env['EXPO_PUBLIC_DATADOG_CLIENT_TOKEN'] || '',
+          applicationId: process.env['EXPO_PUBLIC_DATADOG_APPLICATION_ID'] || '',
           options: {
             site: 'US1',
             trackingConsent: 'granted',

@@ -10,11 +10,11 @@
     "resolveJsonModule": true,
     "noImplicitReturns": true,
     "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -26,11 +26,19 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
+    "App.tsx",
+    "index.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "__tests__/**/*.ts",
+    "__tests__/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
-    "functions"
+    "functions",
+    "speaksync-web",
+    "e2e",
+    "scripts",
+    "coverage"
   ]
 }

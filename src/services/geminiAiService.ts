@@ -315,7 +315,7 @@ class GeminiAiService {
 
   // Get API key from environment
   static getApiKey(): string {
-    return process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+    return process.env['EXPO_PUBLIC_GEMINI_API_KEY'] || '';
   }
 }
 

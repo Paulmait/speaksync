@@ -22,3 +22,6 @@ export { default as FeedbackPanel } from './FeedbackPanel';
 
 // Team components
 export * from './team';
+
+// AI Speech Coach components
+export * from './coaching';

@@ -14,3 +14,7 @@ export { default as feedbackService } from './feedbackService';
 
 // Re-export from adaptiveScrollService
 export * from './adaptiveScrollService';
+
+// AI Speech Coach services
+export { speechCoachService } from './speechCoachService';
+export { practiceExercisesService } from './practiceExercisesService';

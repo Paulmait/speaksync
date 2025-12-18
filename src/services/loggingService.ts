@@ -174,10 +174,9 @@ export class LoggingService {
 
   private sendToMonitoring(entry: LogEntry): void {
     try {
-      // Send structured logs to monitoring service
-      this.monitoringService.captureEvent('app_log', {
+      // Send structured logs to monitoring service using breadcrumb
+      this.monitoringService.addBreadcrumb(entry.message, 'app_log', {
         level: LogLevel[entry.level],
-        message: entry.message,
         timestamp: entry.timestamp,
         metadata: entry.metadata,
         stack: entry.stack,

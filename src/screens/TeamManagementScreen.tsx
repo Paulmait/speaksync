@@ -14,7 +14,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TeamSelector, TeamMembers, SubscriptionManager } from '../components/team';
-import { Team, TeamRole, Subscription } from '../types';
+import { Team, TeamRole } from '../types';
+import { UserSubscription, TierFeatureMapping, SubscriptionTier } from '../types/subscriptionTypes';
 import { teamService, subscriptionService } from '../services';
 
 export const TeamManagementScreen: React.FC = () => {
@@ -26,7 +27,7 @@ export const TeamManagementScreen: React.FC = () => {
   
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<TeamRole | null>(null);
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [createTeamDialogVisible, setCreateTeamDialogVisible] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -92,7 +93,7 @@ export const TeamManagementScreen: React.FC = () => {
         name: newTeamName.trim(),
         description: newTeamDescription.trim() || undefined,
         ownerId: user.uid,
-        subscriptionTier: subscription.tier,
+        subscriptionTier: subscription.subscriptionTier as any,
       });
 
       const newTeam = await teamService.getTeam(teamId);
@@ -148,9 +149,9 @@ export const TeamManagementScreen: React.FC = () => {
     }
   };
 
-  const canCreateTeam = subscription && subscription.features.maxTeams !== -1 
-    ? (subscription.usage.teamsUsed < subscription.features.maxTeams)
-    : true;
+  const canCreateTeam = subscription
+    ? TierFeatureMapping[subscription.subscriptionTier]?.teamCollaboration
+    : false;
 
   if (loading) {
     return (

@@ -118,12 +118,13 @@ export class PacingMeterService {
    */
   private calculateCurrentWPM(currentTimestamp: number): number {
     const recentDataPoints = this.state.wpmHistory.slice(-10); // Last 10 words
-    
+
     if (recentDataPoints.length < 2) {
       return 0;
     }
-    
+
     const firstPoint = recentDataPoints[0];
+    if (!firstPoint) return 0;
     const duration = (currentTimestamp - firstPoint.timestamp) / 1000; // seconds
     
     if (duration <= 0) return 0;

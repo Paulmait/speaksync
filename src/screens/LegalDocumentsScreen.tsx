@@ -73,7 +73,7 @@ export default function LegalDocumentsScreen() {
         }
         logger.warn('Using cached legal documents due to fetch error', {
           category: 'legal_documents',
-          error: fetchError
+          error: fetchError instanceof Error ? fetchError.message : String(fetchError)
         });
       }
     } catch (err) {
@@ -99,7 +99,7 @@ export default function LegalDocumentsScreen() {
     } catch (err) {
       logger.warn('Failed to load cached legal documents', {
         category: 'legal_documents',
-        error: err
+        error: err instanceof Error ? err.message : String(err)
       });
     }
     return [];
@@ -115,7 +115,7 @@ export default function LegalDocumentsScreen() {
     } catch (err) {
       logger.warn('Failed to cache legal documents', {
         category: 'legal_documents',
-        error: err
+        error: err instanceof Error ? err.message : String(err)
       });
     }
   };

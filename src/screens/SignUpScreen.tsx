@@ -89,7 +89,7 @@ export default function SignUpScreen() {
     }
   };
 
-  const updateFormData = (field: string, value: string) => {
+  const updateFormData = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

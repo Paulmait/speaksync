@@ -116,7 +116,7 @@ describe('AnalyticsService', () => {
         wordsSpoken: 195,
         averageWPM: 145,
         paceAnalysis: [],
-        fillerWordAnalysis: {},
+        fillerWordAnalysis: { fillerRate: 0 },
         scriptAdherence: {
           totalScriptWords: 200,
           wordsSpoken: 195,

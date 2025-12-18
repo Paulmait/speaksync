@@ -64,7 +64,7 @@ export class ErrorHandlingService {
   private config: ErrorHandlerConfig;
   private errorLogs: ErrorInfo[] = [];
   private crashReports: CrashReport[] = [];
-  private breadcrumbs: Array<{timestamp: number, message: string, category: string}> = [];
+  private breadcrumbs: Array<{timestamp: number, message: string, category: string, data?: Record<string, unknown>}> = [];
   private isInitialized = false;
   private errorListeners: ErrorListener[] = [];
   private crashListeners: CrashListener[] = [];
@@ -609,7 +609,7 @@ export class ErrorHandlingService {
         isConnected: netInfo.isConnected || false,
         type: netInfo.type || 'unknown',
         isInternetReachable: netInfo.isInternetReachable || false,
-        details: netInfo.details || {} as Record<string, unknown>
+        details: (netInfo.details ? { ...netInfo.details } : {}) as Record<string, unknown>
       };
     } catch (error) {
       return null;

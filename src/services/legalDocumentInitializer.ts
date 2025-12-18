@@ -197,13 +197,13 @@ class LegalDocumentInitializer {
 
       for (const docData of INITIAL_LEGAL_DOCUMENTS) {
         try {
-          // Create the document
+          // Create the document (use type as the identifier name)
           const documentId = await legalDocumentService.createDocument({
-            name: docData.name,
-            type: docData.type,
+            name: docData.type, // Use type enum value as document name/identifier
             content: docData.content,
             version: docData.version,
             effectiveDate: Date.now(),
+            isActive: true,
             metadata: {
               format: 'markdown',
               category: 'privacy', // Default category

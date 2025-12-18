@@ -457,7 +457,7 @@ export default function AnalyticsScreen({ navigation }: AnalyticsScreenProps) {
                   </Text>
                   <BarChart
                     data={{
-                      labels: summary.weeklyStats.slice(-8).map(w => w.week.split('-W')[1]),
+                      labels: summary.weeklyStats.slice(-8).map(w => w.week.split('-W')[1] || ''),
                       datasets: [{
                         data: summary.weeklyStats.slice(-8).map(w => w.sessionCount),
                       }],

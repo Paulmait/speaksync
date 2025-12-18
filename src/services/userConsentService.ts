@@ -111,7 +111,7 @@ class UserConsentService {
       logger.info('User consent initialized', { userId });
       
     } catch (error) {
-      logger.error('Failed to initialize user consent', error, { userId });
+      logger.error('Failed to initialize user consent', error instanceof Error ? error : undefined, { userId });
       throw error;
     }
   }
@@ -174,7 +174,7 @@ class UserConsentService {
       return status;
       
     } catch (error) {
-      logger.error('Failed to check consent status', error, { userId });
+      logger.error('Failed to check consent status', error instanceof Error ? error : undefined, { userId });
       throw error;
     }
   }
@@ -243,7 +243,7 @@ class UserConsentService {
       });
       
     } catch (error) {
-      logger.error('Failed to update user consent', error, { userId });
+      logger.error('Failed to update user consent', error instanceof Error ? error : undefined, { userId });
       throw error;
     }
   }
@@ -286,7 +286,7 @@ class UserConsentService {
       });
       
     } catch (error) {
-      logger.error('Failed to update AI data consent', error, { userId });
+      logger.error('Failed to update AI data consent', error instanceof Error ? error : undefined, { userId });
       throw error;
     }
   }
@@ -318,7 +318,7 @@ class UserConsentService {
       return data;
       
     } catch (error) {
-      logger.error('Failed to get user consent', error, { userId });
+      logger.error('Failed to get user consent', error instanceof Error ? error : undefined, { userId });
       return null;
     }
   }
@@ -344,7 +344,7 @@ class UserConsentService {
         ai: aiDoc?.version
       };
     } catch (error) {
-      logger.error('Failed to get current document versions', error);
+      logger.error('Failed to get current document versions', error instanceof Error ? error : undefined);
       return {};
     }
   }
@@ -370,7 +370,7 @@ class UserConsentService {
         await setDoc(doc(collection(db, this.COLLECTIONS.CONSENT_HISTORY)), entry);
       }
     } catch (error) {
-      logger.error('Failed to record consent history', error, { userId });
+      logger.error('Failed to record consent history', error instanceof Error ? error : undefined, { userId });
     }
   }
 
@@ -381,7 +381,7 @@ class UserConsentService {
         updatedAt: serverTimestamp()
       });
     } catch (error) {
-      logger.error('Failed to update last consent check', error, { userId });
+      logger.error('Failed to update last consent check', error instanceof Error ? error : undefined, { userId });
     }
   }
 
@@ -392,7 +392,7 @@ class UserConsentService {
         JSON.stringify(consentData)
       );
     } catch (error) {
-      logger.error('Failed to cache user consent', error);
+      logger.error('Failed to cache user consent', error instanceof Error ? error : undefined);
     }
   }
 
@@ -401,7 +401,7 @@ class UserConsentService {
       const cached = await AsyncStorage.getItem(this.CACHE_KEYS.USER_CONSENT);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
-      logger.error('Failed to get cached user consent', error);
+      logger.error('Failed to get cached user consent', error instanceof Error ? error : undefined);
       return null;
     }
   }
@@ -416,7 +416,7 @@ class UserConsentService {
         this.CACHE_KEYS.LAST_CONSENT_CHECK
       ]);
     } catch (error) {
-      logger.error('Failed to clear consent cache', error);
+      logger.error('Failed to clear consent cache', error instanceof Error ? error : undefined);
     }
   }
 }

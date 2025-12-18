@@ -314,7 +314,11 @@ class LegalDocumentService implements LegalDocumentAdmin, LegalDocumentReader {
         throw new Error('Version not found');
       }
 
-      const versionData = versionSnapshot.docs[0].data() as LegalDocumentVersion;
+      const versionDoc = versionSnapshot.docs[0];
+      if (!versionDoc) {
+        throw new Error('Version document not found');
+      }
+      const versionData = versionDoc.data() as LegalDocumentVersion;
       
       // Update the main document with the version data
       await updateDoc(docRef, {

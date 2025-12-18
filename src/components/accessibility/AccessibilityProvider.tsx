@@ -119,8 +119,8 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ ch
   const runAudit = async (): Promise<void> => {
     try {
       // Pass the current view/component as the component to audit
-      const results = await accessibilityService.auditAccessibility('MainView');
-      setAuditResults(results);
+      const result = await accessibilityService.auditAccessibility('MainView');
+      setAuditResults([result]);
     } catch (error) {
       // Replace console with proper error handling when available
       // console.error('Failed to run accessibility audit:', error);

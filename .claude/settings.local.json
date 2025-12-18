@@ -23,7 +23,10 @@
       "Bash(eas update:configure:*)",
       "Bash(eas credentials:*)",
       "Bash(eas build:configure:*)",
-      "Bash(npx expo export:*)"
+      "Bash(npx expo export:*)",
+      "Bash(timeout 60 npx expo start:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(cat:*)"
     ]
   }
 }

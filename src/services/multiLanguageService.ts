@@ -197,10 +197,19 @@ class MultiLanguageService {
   private languageDetectionCache: Map<string, LanguageOption> = new Map();
 
   private constructor() {
+    const defaultEnglish: LanguageOption = {
+      code: 'en',
+      name: 'English',
+      nativeName: 'English',
+      rtl: false,
+      flag: '🇺🇸',
+      deepgramModel: 'general',
+      supported: true
+    };
     this.settings = {
       autoDetectLanguage: true,
-      defaultLanguage: SUPPORTED_LANGUAGES[0] || { code: 'en', name: 'English', nativeName: 'English' },
-      fallbackLanguage: SUPPORTED_LANGUAGES[0] || { code: 'en', name: 'English', nativeName: 'English' },
+      defaultLanguage: SUPPORTED_LANGUAGES[0] || defaultEnglish,
+      fallbackLanguage: SUPPORTED_LANGUAGES[0] || defaultEnglish,
       enableRTLSupport: true,
       showLanguageFlags: true,
       enableTranslationSuggestions: false

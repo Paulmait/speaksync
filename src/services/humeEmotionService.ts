@@ -240,10 +240,13 @@ class HumeEmotionService {
       neutral: { emoji: '😐', color: '#9CA3AF', description: 'Neutral' },
     };
 
-    const indicator = emotionMap[emotion] || emotionMap['neutral'];
+    const neutralDefault = { emoji: '😐', color: '#9CA3AF', description: 'Neutral' };
+    const indicator = emotionMap[emotion] || neutralDefault;
 
     return {
-      ...indicator,
+      emoji: indicator.emoji,
+      color: indicator.color,
+      description: indicator.description,
       confidence,
     };
   }
@@ -270,7 +273,10 @@ class HumeEmotionService {
     const bytes = new Uint8Array(buffer);
     let binary = '';
     for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+      const byte = bytes[i];
+      if (byte !== undefined) {
+        binary += String.fromCharCode(byte);
+      }
     }
     return btoa(binary);
   }
